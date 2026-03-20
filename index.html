@@ -1295,7 +1295,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.8</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.9</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2715,56 +2715,103 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
     const h        = slotH;
     const top      = trackCy - h / 2;
 
+    // Calculer la position X d'aujourd'hui
+    const nowDay = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
+    const nowX   = dayToX(nowDay);
+    const evtStartDay = evtStartDays(evt);
+    const evtEndDay   = endless ? Infinity : evtEndDays(evt);
+    const isFuture    = evtStartDay > nowDay;   // entièrement futur
+    const isCurrent   = !isFuture && evtEndDay > nowDay; // chevauche aujourd'hui
+
     const cx1 = Math.max(x1, 0);
     const cx2 = Math.min(x2, W);
     const cw  = cx2 - cx1;
     if (cw < 1) return;
 
-    const grad = ctx.createLinearGradient(cx1, top, cx1, top + h);
-    grad.addColorStop(0, hexToRgba(col, isHov || isSel ? 0.95 : 0.80));
-    grad.addColorStop(1, hexToRgba(darken(col, 0.4), isHov || isSel ? 0.90 : 0.75));
-    ctx.fillStyle = grad;
-    // Si sans fin, côté droit droit (pas arrondi)
-    if (endless) {
-      ctx.beginPath();
-      ctx.moveTo(cx1 + 3, top);
-      ctx.lineTo(cx2, top);
-      ctx.lineTo(cx2, top + h);
-      ctx.lineTo(cx1 + 3, top + h);
-      ctx.quadraticCurveTo(cx1, top + h, cx1, top + h - 3);
-      ctx.lineTo(cx1, top + 3);
-      ctx.quadraticCurveTo(cx1, top, cx1 + 3, top);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      roundRect(ctx, cx1, top, cw, h, 3); ctx.fill();
-    }
-
-    ctx.strokeStyle = isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.5);
-    ctx.lineWidth = isSel ? 2 : 1;
-    if (endless) {
-      ctx.beginPath();
-      ctx.moveTo(cx1 + 3, top);
-      ctx.lineTo(cx2, top);
-      ctx.moveTo(cx2, top + h);
-      ctx.lineTo(cx1 + 3, top + h);
-      ctx.quadraticCurveTo(cx1, top + h, cx1, top + h - 3);
-      ctx.lineTo(cx1, top + 3);
-      ctx.quadraticCurveTo(cx1, top, cx1 + 3, top);
-      ctx.stroke();
-      // Petite flèche ouverte sur le bord droit
-      const ay = trackCy, ax = W - 2;
-      ctx.strokeStyle = hexToRgba(col, 0.9);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(ax - 6, ay - 5); ctx.lineTo(ax, ay); ctx.lineTo(ax - 6, ay + 5);
-      ctx.stroke();
-    } else {
+    if (isFuture) {
+      // ── Entièrement futur : contour pointillé, pas de fond ──
+      ctx.strokeStyle = hexToRgba(col, isHov || isSel ? 0.9 : 0.6);
+      ctx.lineWidth = isSel ? 2 : 1.5;
+      ctx.setLineDash([4, 4]);
       roundRect(ctx, cx1, top, cw, h, 3); ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (isCurrent) {
+      // ── Chevauche aujourd'hui : partie passée normale, partie future pointillée ──
+      const nowClamped = Math.max(cx1, Math.min(nowX, cx2));
+      const pastW = nowClamped - cx1;
+      const futW  = cx2 - nowClamped;
+
+      // Partie passée (fond normal)
+      if (pastW > 0) {
+        const grad = ctx.createLinearGradient(cx1, top, cx1, top + h);
+        grad.addColorStop(0, hexToRgba(col, isHov || isSel ? 0.95 : 0.80));
+        grad.addColorStop(1, hexToRgba(darken(col, 0.4), isHov || isSel ? 0.90 : 0.75));
+        ctx.fillStyle = grad;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(cx1, top, pastW, h); ctx.clip();
+        roundRect(ctx, cx1, top, cw, h, 3); ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.5);
+        ctx.lineWidth = isSel ? 2 : 1;
+        ctx.setLineDash([]);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(cx1, top - 1, pastW, h + 2); ctx.clip();
+        roundRect(ctx, cx1, top, cw, h, 3); ctx.stroke();
+        ctx.restore();
+      }
+
+      // Partie future (contour pointillé)
+      if (futW > 1) {
+        ctx.strokeStyle = hexToRgba(col, isHov || isSel ? 0.9 : 0.55);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(nowClamped, top - 1, futW + 1, h + 2); ctx.clip();
+        roundRect(ctx, cx1, top, cw, h, 3); ctx.stroke();
+        ctx.restore();
+        ctx.setLineDash([]);
+      }
+    } else {
+      // ── Entièrement passé : rendu normal ──
+      const grad = ctx.createLinearGradient(cx1, top, cx1, top + h);
+      grad.addColorStop(0, hexToRgba(col, isHov || isSel ? 0.95 : 0.80));
+      grad.addColorStop(1, hexToRgba(darken(col, 0.4), isHov || isSel ? 0.90 : 0.75));
+      ctx.fillStyle = grad;
+      if (endless) {
+        ctx.beginPath();
+        ctx.moveTo(cx1 + 3, top); ctx.lineTo(cx2, top); ctx.lineTo(cx2, top + h);
+        ctx.lineTo(cx1 + 3, top + h);
+        ctx.quadraticCurveTo(cx1, top + h, cx1, top + h - 3);
+        ctx.lineTo(cx1, top + 3);
+        ctx.quadraticCurveTo(cx1, top, cx1 + 3, top);
+        ctx.closePath(); ctx.fill();
+      } else {
+        roundRect(ctx, cx1, top, cw, h, 3); ctx.fill();
+      }
+      ctx.strokeStyle = isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.5);
+      ctx.lineWidth = isSel ? 2 : 1;
+      ctx.setLineDash([]);
+      if (endless) {
+        ctx.beginPath();
+        ctx.moveTo(cx1 + 3, top); ctx.lineTo(cx2, top);
+        ctx.moveTo(cx2, top + h); ctx.lineTo(cx1 + 3, top + h);
+        ctx.quadraticCurveTo(cx1, top + h, cx1, top + h - 3);
+        ctx.lineTo(cx1, top + 3);
+        ctx.quadraticCurveTo(cx1, top, cx1 + 3, top);
+        ctx.stroke();
+        const ay = trackCy, ax = W - 2;
+        ctx.strokeStyle = hexToRgba(col, 0.9);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(ax - 6, ay - 5); ctx.lineTo(ax, ay); ctx.lineTo(ax - 6, ay + 5);
+        ctx.stroke();
+      } else {
+        roundRect(ctx, cx1, top, cw, h, 3); ctx.stroke();
+      }
     }
 
     if (cw > 35) {
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillStyle = isFuture ? hexToRgba(col, 0.7) : 'rgba(255,255,255,0.9)';
       ctx.font = `16px "Source Sans 3", sans-serif`;
       ctx.textAlign = 'left';
       ctx.save();
@@ -2772,6 +2819,7 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
       ctx.fillText(evt.title, cx1 + 5, trackCy + 4);
       ctx.restore();
     }
+    ctx.setLineDash([]);
     state.hitBoxes.push({ evt, tl, x1, y1: top, x2: endless ? W : x2, y2: top + h });
 
   } else {
@@ -2782,10 +2830,13 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
     const baseR = evt.symbolSize || PT_R;
     const r = baseR + (isHov || isSel ? 3 : 0);
 
+    const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
+    const isFuturePoint = evtStartDays(evt) > nowDay2;
+
     // Tige verticale
     ctx.strokeStyle = hexToRgba(col, 0.5);
     ctx.lineWidth = 1;
-    ctx.setLineDash([2,4]);
+    ctx.setLineDash(isFuturePoint ? [2,3] : [2,4]);
     ctx.beginPath(); ctx.moveTo(x, cy - r); ctx.lineTo(x, cy - ROW_H/2 + 4); ctx.stroke();
     ctx.setLineDash([]);
 
@@ -2798,14 +2849,27 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
       ctx.beginPath(); ctx.arc(x, cy, r*2.5, 0, Math.PI*2); ctx.fill();
     }
 
-    drawSymbol(ctx, evt.symbol || 'circle', x, cy, r,
-      col,
-      isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.6),
-      1.5
-    );
+    if (isFuturePoint) {
+      // Point futur : contour pointillé, pas de fond
+      ctx.strokeStyle = hexToRgba(col, isHov || isSel ? 0.9 : 0.65);
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.fillStyle = 'transparent';
+      ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      drawSymbol(ctx, evt.symbol || 'circle', x, cy, r,
+        col,
+        isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.6),
+        1.5
+      );
+    }
 
     // Label au-dessus
-    ctx.fillStyle = isHov || isSel ? 'white' : hexToRgba(col, 0.9);
+    ctx.fillStyle = isFuturePoint
+      ? hexToRgba(col, 0.6)
+      : (isHov || isSel ? 'white' : hexToRgba(col, 0.9));
     ctx.font = (isHov || isSel ? 'bold 15px' : '15px') + ' "Source Sans 3", sans-serif';
     ctx.textAlign = 'center';
     let lbl = evt.title;
@@ -6088,7 +6152,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6.8</span></div>
+  <div class="about-row"><span>Version</span><span>0.6.9</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
