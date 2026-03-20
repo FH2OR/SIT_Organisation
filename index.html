@@ -1295,7 +1295,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.4</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.5</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2227,9 +2227,6 @@ function render() {
 
   // Vérifier si l'animation de clignotement est nécessaire
   // (appelé à chaque render pour démarrer/arrêter selon l'état courant)
-  if (!_blinkAnimId && state.timelines.length > 0) {
-    checkBlinkNeeded();
-  }
 }
 
 // ── Time header ───────────────────────────────────────────────
@@ -2635,7 +2632,7 @@ function drawRow(tl, rowTop) {
       ? hiddenXs[Math.floor(hiddenXs.length / 2)]
       : W / 2;
     ctx.globalAlpha = 1;
-    drawHiddenDot(dotX, rowTop + mainH + 6, tl.color);
+    drawHiddenTriangle(dotX, rowTop + mainH + 4, tl.color);
   }
 
   // ── Pistes des sous-rubriques ───────────────────────────────
@@ -2717,7 +2714,7 @@ function drawRow(tl, rowTop) {
         ? subHiddenXs[Math.floor(subHiddenXs.length / 2)]
         : W / 2;
       ctx.globalAlpha = 1;
-      drawHiddenDot(subDotX, subTop + subH - 4, sub.color);
+      drawHiddenTriangle(subDotX, subTop + subH - 2, sub.color);
     }
   });
 
@@ -2870,12 +2867,14 @@ function hasHiddenEventsNearby(events) {
 
 // Dessiner le point clignotant sous un événement
 // phase = valeur 0..1 basée sur Date.now() pour l'animation
-function drawHiddenDot(x, y, col) {
-  const phase = (Date.now() % 1200) / 1200; // cycle 1.2s
-  const alpha = 0.4 + 0.5 * Math.abs(Math.sin(phase * Math.PI));
-  ctx.fillStyle = hexToRgba(col, alpha);
+function drawHiddenTriangle(x, y, col) {
+  const size = 5; // demi-base du triangle
+  ctx.fillStyle = hexToRgba(col, 0.75);
   ctx.beginPath();
-  ctx.arc(x, y, 3, 0, Math.PI * 2);
+  ctx.moveTo(x - size, y - size * 1.2); // coin gauche (haut)
+  ctx.lineTo(x + size, y - size * 1.2); // coin droit (haut)
+  ctx.lineTo(x, y);                     // pointe en bas
+  ctx.closePath();
   ctx.fill();
 }
 
@@ -2994,7 +2993,6 @@ canvas.addEventListener('wheel', e => {
   state.scale = newScale;
   // Repasser en mode auto LOD géométrique au zoom molette
   render();
-  checkBlinkNeeded();
 }, { passive: false });
 
 canvas.addEventListener('mousedown', e => {
@@ -4026,7 +4024,6 @@ function addFromCatalogue(id, ensureParentId) {
   // Vider le cache LOD pour les nouveaux événements
   Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
   render();
-  checkBlinkNeeded();
 
   const addedTl = state.timelines.find(t => t.id === id);
   if (addedTl && addedTl.events.filter(e => !e._auto).length > 0) {
@@ -4824,7 +4821,6 @@ async function dbPullCatalogue() {
     buildCatalogueList('');
     buildFA();
     render();
-    checkBlinkNeeded();
 
     const nbEvts = (evts || []).length;
     dbSetStatus(`✓ Chargé : ${rubs.length} rubriques, ${nbEvts} événements`, 'ok');
@@ -5957,33 +5953,7 @@ function getLodOpacity(id, targetOpacity) {
   return lodOpacity[id];
 }
 
-// ── Animation des points clignotants ─────────────────────────
-let _blinkAnimId = null;
-
-function startBlinkAnimation() {
-  if (_blinkAnimId) return; // déjà en cours
-  function loop() {
-    render();
-    _blinkAnimId = requestAnimationFrame(loop);
-  }
-  _blinkAnimId = requestAnimationFrame(loop);
-}
-
-function stopBlinkAnimation() {
-  if (_blinkAnimId) {
-    cancelAnimationFrame(_blinkAnimId);
-    _blinkAnimId = null;
-  }
-}
-
-// Vérifier si des points clignotants sont nécessaires
-function checkBlinkNeeded() {
-  const needed = state.timelines.some(tl =>
-    tl.enabled !== false && hasHiddenEventsNearby(tl.events)
-  );
-  if (needed) startBlinkAnimation();
-  else stopBlinkAnimation();
-}
+// Animation de clignotement supprimée — remplacée par triangle fixe
 
 // ── Vérifier si l'utilisateur courant est admin ───────────────
 function isAdmin() {
@@ -6106,7 +6076,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6.4</span></div>
+  <div class="about-row"><span>Version</span><span>0.6.5</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
