@@ -1295,7 +1295,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.3</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.4</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2597,7 +2597,6 @@ function drawRow(tl, rowTop) {
   });
 
   // ── Point clignotant unique par timeline ──────────────────
-  // Affiché au centre de la zone visible si des événements sont cachés
   if (hasHidden) {
     const visibleDayMin = xToDay(0);
     const visibleDayMax = xToDay(W);
@@ -2630,13 +2629,13 @@ function drawRow(tl, rowTop) {
       })
       .filter(x => x >= 0 && x <= W);
 
-    if (hiddenXs.length > 0) {
-      // Un seul point au milieu de la zone des cachés
-      const medianX = hiddenXs[Math.floor(hiddenXs.length / 2)];
-      const col = tl.color;
-      ctx.globalAlpha = 1;
-      drawHiddenDot(medianX, rowTop + mainH + 6, col);
-    }
+    // Si des cachés sont dans la zone visible → point à leur médiane
+    // Sinon → point au centre de l'écran pour signaler qu'il faut naviguer
+    const dotX = hiddenXs.length > 0
+      ? hiddenXs[Math.floor(hiddenXs.length / 2)]
+      : W / 2;
+    ctx.globalAlpha = 1;
+    drawHiddenDot(dotX, rowTop + mainH + 6, tl.color);
   }
 
   // ── Pistes des sous-rubriques ───────────────────────────────
@@ -2714,11 +2713,11 @@ function drawRow(tl, rowTop) {
         })
         .filter(x => x >= 0 && x <= W);
 
-      if (subHiddenXs.length > 0) {
-        const medianX = subHiddenXs[Math.floor(subHiddenXs.length / 2)];
-        ctx.globalAlpha = 1;
-        drawHiddenDot(medianX, subTop + subH - 4, sub.color);
-      }
+      const subDotX = subHiddenXs.length > 0
+        ? subHiddenXs[Math.floor(subHiddenXs.length / 2)]
+        : W / 2;
+      ctx.globalAlpha = 1;
+      drawHiddenDot(subDotX, subTop + subH - 4, sub.color);
     }
   });
 
@@ -2853,29 +2852,18 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
 // Retourne true si des événements de la même timeline sont cachés
 // dans la zone temporelle visible
 function hasHiddenEventsNearby(events) {
-  const visibleDayMin = xToDay(0);
-  const visibleDayMax = xToDay(W);
   const today = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
-
-  // Pré-calculer l'opacité des points pour cette timeline
   const pointOp = lodPointsOpacity(events);
 
-  // Si l'espacement des points est insuffisant → il y a des cachés
-  const hasHiddenPoints = pointOp < 0.5 && events.some(e =>
-    !e._auto && e.type === 'point' &&
-    tupleToDays(e.date) >= visibleDayMin &&
-    tupleToDays(e.date) <= visibleDayMax &&
-    tupleToDays(e.date) <= today + 10000
-  );
-  if (hasHiddenPoints) return true;
+  // Points cachés (espacement insuffisant)
+  if (pointOp < 0.5 && events.some(e => !e._auto && e.type === 'point')) return true;
 
-  // Vérifier les ranges cachés dans la zone visible
+  // Ranges cachés (peu importe leur position dans la vue)
   return events.some(e => {
     if (e._auto || e.type !== 'range') return false;
     const s  = tupleToDays(e.start);
     const en = e.end ? tupleToDays(e.end) : s;
     if (s > today + 10000 || en > today + 10000) return false;
-    if (en < visibleDayMin || s > visibleDayMax) return false;
     return lodRangeOpacity(e) < 0.1;
   });
 }
@@ -6118,7 +6106,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6.3</span></div>
+  <div class="about-row"><span>Version</span><span>0.6.4</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
