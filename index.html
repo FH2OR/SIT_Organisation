@@ -1295,7 +1295,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.1</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2588,21 +2588,45 @@ function drawRow(tl, rowTop) {
     ctx.globalAlpha = opacity;
     drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap);
     ctx.globalAlpha = 1;
-
-    // Point clignotant si des événements sont cachés dans la zone visible
-    if (hasHidden) {
-      const col = evt.color || tl.color;
-      if (evt.type === 'range') {
-        const x1 = dayToX(evtStartDays(evt));
-        const x2 = Math.min(evt.end ? dayToX(evtEndDays(evt)) : W, W);
-        const midX = Math.max(0, Math.min((x1 + x2) / 2, W));
-        if (midX >= 0 && midX <= W) drawHiddenDot(midX, rowTop + mainH + 6, col);
-      } else {
-        const x = dayToX(evtStartDays(evt));
-        if (x >= 0 && x <= W) drawHiddenDot(x, mainCy + (evt.symbolSize || 6) + 10, col);
-      }
-    }
   });
+
+  // ── Point clignotant unique par timeline ──────────────────
+  // Affiché au centre de la zone visible si des événements sont cachés
+  if (hasHidden) {
+    // Trouver la position X médiane des événements cachés visibles
+    const visibleDayMin = xToDay(0);
+    const visibleDayMax = xToDay(W);
+    const hiddenXs = tl.events
+      .filter(e => {
+        if (e._auto) return false;
+        if (e.type === 'range') {
+          const s = tupleToDays(e.start);
+          const en = e.end ? tupleToDays(e.end) : s;
+          if (en < visibleDayMin || s > visibleDayMax) return false;
+          return lodRangeOpacity(e) < 0.1;
+        } else {
+          const d = tupleToDays(e.date);
+          if (d < visibleDayMin || d > visibleDayMax) return false;
+          return lodPointsOpacity(tl.events) < 0.1;
+        }
+      })
+      .map(e => {
+        if (e.type === 'range') {
+          const s  = dayToX(tupleToDays(e.start));
+          const en = e.end ? dayToX(tupleToDays(e.end)) : W;
+          return Math.max(0, Math.min((s + en) / 2, W));
+        }
+        return dayToX(tupleToDays(e.date));
+      })
+      .filter(x => x >= 0 && x <= W);
+
+    if (hiddenXs.length > 0) {
+      // Un seul point au milieu de la zone des cachés
+      const medianX = hiddenXs[Math.floor(hiddenXs.length / 2)];
+      const col = tl.color;
+      drawHiddenDot(medianX, rowTop + mainH + 6, col);
+    }
+  }
 
   // ── Pistes des sous-rubriques ───────────────────────────────
   subs.forEach(({ sub, cy, subH, subTop }) => {
@@ -2644,21 +2668,41 @@ function drawRow(tl, rowTop) {
       ctx.globalAlpha = opacity;
       drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap);
       ctx.globalAlpha = 1;
-
-      // Point clignotant
-      if (subHasHidden) {
-        const col = evt.color || sub.color;
-        if (evt.type === 'range') {
-          const x1 = dayToX(evtStartDays(evt));
-          const x2 = Math.min(evt.end ? dayToX(evtEndDays(evt)) : W, W);
-          const midX = Math.max(0, Math.min((x1 + x2) / 2, W));
-          if (midX >= 0 && midX <= W) drawHiddenDot(midX, subTop + subH - 4, col);
-        } else {
-          const x = dayToX(evtStartDays(evt));
-          if (x >= 0 && x <= W) drawHiddenDot(x, cy + (evt.symbolSize || 5) + 8, col);
-        }
-      }
     });
+
+    // Point clignotant unique pour cette sous-rubrique
+    if (subHasHidden) {
+      const visibleDayMin = xToDay(0);
+      const visibleDayMax = xToDay(W);
+      const subHiddenXs = sub.events
+        .filter(e => {
+          if (e._auto) return false;
+          if (e.type === 'range') {
+            const s = tupleToDays(e.start);
+            const en = e.end ? tupleToDays(e.end) : s;
+            if (en < visibleDayMin || s > visibleDayMax) return false;
+            return lodRangeOpacity(e) < 0.1;
+          } else {
+            const d = tupleToDays(e.date);
+            if (d < visibleDayMin || d > visibleDayMax) return false;
+            return lodPointsOpacity(sub.events) < 0.1;
+          }
+        })
+        .map(e => {
+          if (e.type === 'range') {
+            const s  = dayToX(tupleToDays(e.start));
+            const en = e.end ? dayToX(tupleToDays(e.end)) : W;
+            return Math.max(0, Math.min((s + en) / 2, W));
+          }
+          return dayToX(tupleToDays(e.date));
+        })
+        .filter(x => x >= 0 && x <= W);
+
+      if (subHiddenXs.length > 0) {
+        const medianX = subHiddenXs[Math.floor(subHiddenXs.length / 2)];
+        drawHiddenDot(medianX, subTop + subH - 4, sub.color);
+      }
+    }
   });
 
   // Séparateur bas de ligne
@@ -2804,13 +2848,16 @@ function hasHiddenEventsNearby(events) {
     if (e.type === 'range') {
       const s  = tupleToDays(e.start);
       const en = e.end ? tupleToDays(e.end) : s;
+      // Ignorer les dates aberrantes (> 10000 jours dans le futur)
+      const today = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
+      if (s > today + 10000 || en > today + 10000) return false;
       if (en < visibleDayMin || s > visibleDayMax) return false;
-      // Calculer si ce range serait caché
       return lodRangeOpacity(e) < 0.1;
     } else {
       const d = tupleToDays(e.date);
+      const today = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
+      if (d > today + 10000) return false;
       if (d < visibleDayMin || d > visibleDayMax) return false;
-      // Les points sont cachés si l'espacement moyen est insuffisant
       return pointOp < 0.1;
     }
   });
@@ -6054,7 +6101,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6</span></div>
+  <div class="about-row"><span>Version</span><span>0.6.1</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
