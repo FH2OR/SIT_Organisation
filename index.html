@@ -1295,7 +1295,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.6</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.7</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2067,26 +2067,59 @@ function computeTracks(events) {
   return { trackMap, trackCount: trackEnds.length };
 }
 
+// Compte le nombre de tracks supplémentaires nécessaires pour les events cachés
+// qui chevauchent des events visibles permanents
+function extraTracksForHidden(events) {
+  const ranges = events.filter(e => e.type === 'range' && !e._auto);
+  const permanent = ranges.filter(e => {
+    if (!e.start) return false;
+    const durationYears = e.end
+      ? Math.abs(tupleToDays(e.end) - tupleToDays(e.start)) / 365.25
+      : 0;
+    return durationYears >= LOD_RANGE_PERMANENT_ANS;
+  });
+  const hidden = ranges.filter(e => lodRangeOpacity(e) < 0.1);
+  if (permanent.length === 0 || hidden.length === 0) return 0;
+
+  // Compter combien d'events cachés chevauchent des events permanents
+  let extra = 0;
+  hidden.forEach(h => {
+    const hs = evtStartDays(h);
+    const he = evtEndDays(h);
+    const overlaps = permanent.some(p => {
+      const ps = evtStartDays(p);
+      const pe = evtEndDays(p);
+      return hs <= pe && he >= ps;
+    });
+    if (overlaps) extra++;
+  });
+  return Math.min(extra, 3); // max 3 tracks supplémentaires
+}
+
 function rowHeight(tl) {
   const activeSubs = state.timelines.filter(s => s.parentId === tl.id && s.enabled);
   const { trackCount } = computeTracks(tl.events);
-  const mainH = ROW_H + Math.max(0, trackCount - 1) * TRACK_SLOT;
+  const extra = extraTracksForHidden(tl.events);
+  const mainH = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
   return mainH + activeSubs.reduce((sum, sub) => {
     const { trackCount: tc } = computeTracks(sub.events);
-    return sum + SUB_TRACK + Math.max(0, tc - 1) * SUB_SLOT;
+    const subExtra = extraTracksForHidden(sub.events);
+    return sum + SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT;
   }, 0);
 }
 
 function rowLayout(tl, rowTop) {
   const activeSubs = state.timelines.filter(s => s.parentId === tl.id && s.enabled);
   const { trackCount } = computeTracks(tl.events);
-  const mainH  = ROW_H + Math.max(0, trackCount - 1) * TRACK_SLOT;
+  const extra = extraTracksForHidden(tl.events);
+  const mainH  = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
   const mainCy = rowTop + mainH / 2;
 
   let subOffset = mainH;
   const subs = activeSubs.map(sub => {
     const { trackCount: tc } = computeTracks(sub.events);
-    const subH = SUB_TRACK + Math.max(0, tc - 1) * SUB_SLOT;
+    const subExtra = extraTracksForHidden(sub.events);
+    const subH = SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT;
     const cy = rowTop + subOffset + subH / 2;
     const result = { sub, cy, subH, subTop: rowTop + subOffset };
     subOffset += subH;
@@ -6052,7 +6085,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6.6</span></div>
+  <div class="about-row"><span>Version</span><span>0.6.7</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
