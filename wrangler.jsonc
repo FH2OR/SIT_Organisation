@@ -1,7 +1,8 @@
 {
   "name": "sitorganisation",
-  "compatibility_date": "2026-03-19",
+  "compatibility_date": "2026-03-20",
   "assets": {
-    "directory": "./"
+    "directory": "./",
+    "not_found_handling": "single-page-application"
   }
 }
