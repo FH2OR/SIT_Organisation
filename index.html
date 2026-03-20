@@ -1295,7 +1295,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.1</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.2</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2624,6 +2624,7 @@ function drawRow(tl, rowTop) {
       // Un seul point au milieu de la zone des cachés
       const medianX = hiddenXs[Math.floor(hiddenXs.length / 2)];
       const col = tl.color;
+      ctx.globalAlpha = 1;
       drawHiddenDot(medianX, rowTop + mainH + 6, col);
     }
   }
@@ -2700,6 +2701,7 @@ function drawRow(tl, rowTop) {
 
       if (subHiddenXs.length > 0) {
         const medianX = subHiddenXs[Math.floor(subHiddenXs.length / 2)];
+        ctx.globalAlpha = 1;
         drawHiddenDot(medianX, subTop + subH - 4, sub.color);
       }
     }
@@ -6101,7 +6103,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6.1</span></div>
+  <div class="about-row"><span>Version</span><span>0.6.2</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
