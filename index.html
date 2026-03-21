@@ -1302,7 +1302,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.1</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.2</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2064,19 +2064,30 @@ function computeTracks(events) {
     .filter(e => e.type === 'range' && !e._auto)
     .sort((a, b) => evtStartDays(a) - evtStartDays(b));
 
-  const trackMap = new Map();   // evtId → trackIndex
-  const trackEnds = [];         // fin courante (en jours) de chaque track
+  const trackMap   = new Map();   // evtId → trackIndex
+  const trackEnds  = [];          // fin courante (en jours) de chaque track
+  const altMap     = new Map();   // evtId → alternance 0/1 par track
+
+  // Compteur d'alternance par track
+  const trackAltCount = [];
 
   ranges.forEach(evt => {
     const s = evtStartDays(evt);
     const e = evtEndDays(evt);
-    // Chercher le premier track libre (end < start de ce range)
     let t = trackEnds.findIndex(end => end <= s);
-    if (t === -1) { t = trackEnds.length; trackEnds.push(e); }
-    else trackEnds[t] = e;
+    if (t === -1) {
+      t = trackEnds.length;
+      trackEnds.push(e);
+      trackAltCount.push(0);
+    } else {
+      trackEnds[t] = e;
+    }
+    // Alternance : pair/impair selon le nombre de ranges déjà placés sur ce track
+    altMap.set(evt.id, trackAltCount[t] % 2);
+    trackAltCount[t]++;
     trackMap.set(evt.id, t);
   });
-  return { trackMap, trackCount: trackEnds.length };
+  return { trackMap, trackCount: trackEnds.length, altMap };
 }
 
 // Compte le nombre de tracks supplémentaires nécessaires pour les events cachés
@@ -2602,7 +2613,7 @@ function drawGrid() {
 // ── Row ───────────────────────────────────────────────────────
 function drawRow(tl, rowTop) {
   const { mainCy, mainH, totalH, subs } = rowLayout(tl, rowTop);
-  const { trackMap, trackCount } = computeTracks(tl.events);
+  const { trackMap, trackCount, altMap } = computeTracks(tl.events);
 
   // Fond global de la ligne
   ctx.fillStyle = hexToRgba(tl.color, 0.06);
@@ -2633,7 +2644,7 @@ function drawRow(tl, rowTop) {
     const opacity = getLodOpacity(evt.id, targetOpacity);
     if (opacity <= 0.01) return;
     ctx.globalAlpha = opacity;
-    drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap);
+    drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap, altMap);
     ctx.globalAlpha = 1;
 
     // Triangle ▼ à la position estimée des cachés proches
@@ -2652,7 +2663,7 @@ function drawRow(tl, rowTop) {
 
   // ── Pistes des sous-rubriques ───────────────────────────────
   subs.forEach(({ sub, cy, subH, subTop }) => {
-    const { trackMap: subTrackMap } = computeTracks(sub.events);
+    const { trackMap: subTrackMap, altMap: subAltMap } = computeTracks(sub.events);
 
     // Séparateur haut de piste
     ctx.strokeStyle = hexToRgba(tl.color, 0.15);
@@ -2687,7 +2698,7 @@ function drawRow(tl, rowTop) {
       const opacity = getLodOpacity(evt.id, targetOpacity);
       if (opacity <= 0.01) return;
       ctx.globalAlpha = opacity;
-      drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap);
+      drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap, subAltMap);
       ctx.globalAlpha = 1;
 
       // Triangle ▼ à la position estimée des cachés proches
@@ -2708,10 +2719,16 @@ function drawRow(tl, rowTop) {
   ctx.beginPath(); ctx.moveTo(0, rowTop + totalH); ctx.lineTo(W, rowTop + totalH); ctx.stroke();
 }
 
-function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
+function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
-  const col = evt.color || tl.color;
+  const baseCol = evt.color || tl.color;
+
+  // Alternance de luminosité pour les ranges consécutifs
+  const alt = altMap && altMap.get(evt.id);
+  const col = (evt.type === 'range' && alt === 1)
+    ? darken(baseCol, 0.18)   // ton plus sombre pour les impairs
+    : baseCol;
 
   if (evt.type === 'range') {
     const x1 = dayToX(evtStartDays(evt));
@@ -2835,7 +2852,7 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
     state.hitBoxes.push({ evt, tl, x1, y1: top, x2: endless ? W : x2, y2: top + h });
 
   } else {
-    // Point
+    // Point — positionné à la base de la piste, label sur le côté
     const x = dayToX(evtStartDays(evt));
     if (x < -20 || x > W + 20) return;
 
@@ -2845,51 +2862,53 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap) {
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
-    // Tige verticale
-    ctx.strokeStyle = hexToRgba(col, 0.5);
+    // Positionner à la base de la piste principale
+    const ptY = rowTop + mainH - r - 4;
+
+    // Tige verticale du bas vers le point
+    ctx.strokeStyle = hexToRgba(col, 0.4);
     ctx.lineWidth = 1;
     ctx.setLineDash(isFuturePoint ? [2,3] : [2,4]);
-    ctx.beginPath(); ctx.moveTo(x, cy - r); ctx.lineTo(x, cy - ROW_H/2 + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, rowTop + mainH - 2); ctx.lineTo(x, ptY - r); ctx.stroke();
     ctx.setLineDash([]);
 
     // Halo
     if (isHov || isSel) {
-      const glow = ctx.createRadialGradient(x, cy, 0, x, cy, r*2.5);
+      const glow = ctx.createRadialGradient(x, ptY, 0, x, ptY, r*2.5);
       glow.addColorStop(0, hexToRgba(col, 0.3));
       glow.addColorStop(1, 'transparent');
       ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(x, cy, r*2.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, ptY, r*2.5, 0, Math.PI*2); ctx.fill();
     }
 
     if (isFuturePoint) {
-      // Point futur : contour pointillé, pas de fond
       ctx.strokeStyle = hexToRgba(col, isHov || isSel ? 0.9 : 0.65);
       ctx.lineWidth = 1.5;
       ctx.setLineDash([3, 3]);
-      ctx.fillStyle = 'transparent';
-      ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI*2);
+      ctx.beginPath(); ctx.arc(x, ptY, r, 0, Math.PI*2);
       ctx.stroke();
       ctx.setLineDash([]);
     } else {
-      drawSymbol(ctx, evt.symbol || 'circle', x, cy, r,
+      drawSymbol(ctx, evt.symbol || 'circle', x, ptY, r,
         col,
         isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.6),
         1.5
       );
     }
 
-    // Label au-dessus
+    // Label sur le côté (droite par défaut, gauche si proche du bord droit)
+    ctx.font = (isHov || isSel ? 'bold 13px' : '13px') + ' "Source Sans 3", sans-serif';
+    const lbl = evt.title.length > 18 ? evt.title.slice(0, 17) + '…' : evt.title;
+    const lblW = ctx.measureText(lbl).width;
+    const onRight = x + r + 4 + lblW < W - 4;
+    ctx.textAlign = onRight ? 'left' : 'right';
+    const lblX = onRight ? x + r + 4 : x - r - 4;
     ctx.fillStyle = isFuturePoint
       ? hexToRgba(col, 0.6)
       : (isHov || isSel ? 'white' : hexToRgba(col, 0.9));
-    ctx.font = (isHov || isSel ? 'bold 15px' : '15px') + ' "Source Sans 3", sans-serif';
-    ctx.textAlign = 'center';
-    let lbl = evt.title;
-    while (ctx.measureText(lbl).width > 90 && lbl.length > 4) lbl = lbl.slice(0,-1);
-    if (lbl.length < evt.title.length) lbl = lbl.slice(0,-1) + '…';
-    ctx.fillText(lbl, x, cy - r - 5);
+    ctx.fillText(lbl, lblX, ptY + 4);
 
-    state.hitBoxes.push({ evt, tl, x1: x-r-6, y1: cy-r-6, x2: x+r+6, y2: cy+r+6 });
+    state.hitBoxes.push({ evt, tl, x1: x-r-6, y1: ptY-r-6, x2: x+r+6, y2: ptY+r+6 });
   }
 }
 
@@ -2967,10 +2986,14 @@ function drawHiddenTriangle(x, y, col) {
 }
 
 // ── Sub-event (compact, dans une sous-piste) ──────────────────
-function drawSubEvent(evt, tl, cy, subTop, subH, trackMap) {
+function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
-  const col = evt.color || tl.color;
+  const baseCol = evt.color || tl.color;
+  const alt = altMap && altMap.get(evt.id);
+  const col = (evt.type === 'range' && alt === 1)
+    ? darken(baseCol, 0.18)
+    : baseCol;
 
   if (evt.type === 'range') {
     const x1 = dayToX(evtStartDays(evt));
@@ -6176,7 +6199,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.1</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.2</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
