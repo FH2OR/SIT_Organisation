@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.0</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.1</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2854,14 +2854,15 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
-    // Point positionné à la base de la piste (rowH = mainH passé en paramètre)
-    const ptY = rowTop + rowH - r - 4;
+    // Point positionné à la base du track 0 (ligne de référence fixe)
+    const track0Bottom = rowTop + ROW_H;
+    const ptY = track0Bottom - r - 4;
 
     // Tige verticale (du bas de piste vers le point)
     ctx.strokeStyle = hexToRgba(col, 0.4);
     ctx.lineWidth = 1;
     ctx.setLineDash(isFuturePoint ? [2,3] : [2,4]);
-    ctx.beginPath(); ctx.moveTo(x, rowTop + rowH - 1); ctx.lineTo(x, ptY - r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, track0Bottom - 1); ctx.lineTo(x, ptY - r); ctx.stroke();
     ctx.setLineDash([]);
 
     // Halo
@@ -6020,8 +6021,16 @@ function lodPointsOpacity(events) {
   const points = events.filter(e => e.type === 'point' && !e._auto);
   if (points.length <= 1) return 1;
 
+  // Ne considérer que les points dans la zone visible (+/- marge)
+  const margin = W * 0.1;
+  const visible = points.filter(e => {
+    const px = dayToX(tupleToDays(e.date));
+    return px >= -margin && px <= W + margin;
+  });
+  if (visible.length <= 1) return 1;
+
   // Trier par date et calculer l'espacement moyen en px
-  const sorted = points
+  const sorted = visible
     .map(e => ({ px: dayToX(tupleToDays(e.date)) }))
     .sort((a, b) => a.px - b.px);
 
@@ -6185,7 +6194,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.0</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.1</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
