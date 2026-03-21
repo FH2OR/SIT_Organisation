@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.2</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.3</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2624,7 +2624,8 @@ function drawRow(tl, rowTop) {
   const autoEvt = tl.events.find(e => e._auto);
   if (autoEvt) drawAutoRange(autoEvt, tl, mainCy, rowTop, mainH);
 
-  const pointTargetOpacity = lodPointsOpacity(tl.events);
+  const { opacity: pointTargetOpacity, minGap: pointMinGap } = lodPointsOpacity(tl.events);
+  const showPointLabels = pointMinGap >= LOD_POINT_MIN_PX * 2;
   const today = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
 
   tl.events.forEach(evt => {
@@ -2638,7 +2639,7 @@ function drawRow(tl, rowTop) {
     const opacity = getLodOpacity(evt.id, targetOpacity);
     if (opacity <= 0.01) return;
     ctx.globalAlpha = opacity;
-    drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap, altMap);
+    drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap, altMap, showPointLabels);
     ctx.globalAlpha = 1;
 
     // Triangle ▼ à la position estimée des cachés proches
@@ -2681,7 +2682,8 @@ function drawRow(tl, rowTop) {
     ctx.fillText('↳ ' + sub.title, 6, cy + 3);
 
     // Événements sous-rubriques avec LOD géométrique
-    const subPointOpacity = lodPointsOpacity(sub.events);
+    const { opacity: subPointOpacity, minGap: subPointMinGap } = lodPointsOpacity(sub.events);
+    const showSubPointLabels = subPointMinGap >= LOD_POINT_MIN_PX * 2;
     sub.events.forEach(evt => {
       let targetOpacity;
       if (evt.type === 'range') {
@@ -2692,7 +2694,7 @@ function drawRow(tl, rowTop) {
       const opacity = getLodOpacity(evt.id, targetOpacity);
       if (opacity <= 0.01) return;
       ctx.globalAlpha = opacity;
-      drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap, subAltMap);
+      drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap, subAltMap, showSubPointLabels);
       ctx.globalAlpha = 1;
 
       // Triangle ▼ à la position estimée des cachés proches
@@ -2713,7 +2715,7 @@ function drawRow(tl, rowTop) {
   ctx.beginPath(); ctx.moveTo(0, rowTop + totalH); ctx.lineTo(W, rowTop + totalH); ctx.stroke();
 }
 
-function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
+function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = true) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
   const baseCol = evt.color || tl.color;
@@ -2889,16 +2891,18 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
       );
     }
 
-    // Label sur le côté (droite par défaut, gauche si proche du bord droit)
-    ctx.font = (isHov || isSel ? 'bold 13px' : '13px') + ' "Source Sans 3", sans-serif';
-    const lbl = evt.title.length > 20 ? evt.title.slice(0, 19) + '…' : evt.title;
-    const lblW = ctx.measureText(lbl).width;
-    const onRight = x + r + 5 + lblW < W - 4;
-    ctx.textAlign = onRight ? 'left' : 'right';
-    ctx.fillStyle = isFuturePoint
-      ? hexToRgba(col, 0.6)
-      : (isHov || isSel ? 'white' : hexToRgba(col, 0.9));
-    ctx.fillText(lbl, onRight ? x + r + 5 : x - r - 5, ptY + 4);
+    // Label sur le côté uniquement si assez d'espace
+    if (showLabels || isHov || isSel) {
+      ctx.font = (isHov || isSel ? 'bold 13px' : '13px') + ' "Source Sans 3", sans-serif';
+      const lbl = evt.title.length > 20 ? evt.title.slice(0, 19) + '…' : evt.title;
+      const lblW = ctx.measureText(lbl).width;
+      const onRight = x + r + 5 + lblW < W - 4;
+      ctx.textAlign = onRight ? 'left' : 'right';
+      ctx.fillStyle = isFuturePoint
+        ? hexToRgba(col, 0.6)
+        : (isHov || isSel ? 'white' : hexToRgba(col, 0.9));
+      ctx.fillText(lbl, onRight ? x + r + 5 : x - r - 5, ptY + 4);
+    }
 
     state.hitBoxes.push({ evt, tl, x1: x-r-6, y1: ptY-r-6, x2: x+r+6, y2: ptY+r+6 });
   }
@@ -2909,7 +2913,7 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
 // dans la zone temporelle visible
 function hasHiddenEventsNearby(events) {
   const today = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
-  const pointOp = lodPointsOpacity(events);
+  const { opacity: pointOp } = lodPointsOpacity(events);
 
   // Points cachés (espacement insuffisant)
   if (pointOp < 0.5 && events.some(e => !e._auto && e.type === 'point')) return true;
@@ -2936,7 +2940,7 @@ function hiddenNearbyX(visibleEvt, allEvents, today) {
     ? tupleToDays(visibleEvt.end)
     : evtStart;
 
-  const pointOp = lodPointsOpacity(allEvents);
+  const { opacity: pointOp } = lodPointsOpacity(allEvents);
 
   const hiddenXs = [];
   allEvents.forEach(e => {
@@ -2978,7 +2982,7 @@ function drawHiddenTriangle(x, y, col) {
 }
 
 // ── Sub-event (compact, dans une sous-piste) ──────────────────
-function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap) {
+function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap, showLabels = true) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
   const baseCol = evt.color || tl.color;
@@ -3070,13 +3074,15 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap) {
       1
     );
 
-    ctx.fillStyle = isHov || isSel ? 'white' : hexToRgba(col, 0.85);
-    ctx.font = (isHov || isSel ? 'bold 14px' : '14px') + ' "Source Sans 3", sans-serif';
-    ctx.textAlign = 'center';
-    let lbl = evt.title;
-    while (ctx.measureText(lbl).width > 60 && lbl.length > 3) lbl = lbl.slice(0, -1);
-    if (lbl.length < evt.title.length) lbl = lbl.slice(0, -1) + '…';
-    ctx.fillText(lbl, x, cy - r - 3);
+    if (showLabels || isHov || isSel) {
+      ctx.fillStyle = isHov || isSel ? 'white' : hexToRgba(col, 0.85);
+      ctx.font = (isHov || isSel ? 'bold 14px' : '14px') + ' "Source Sans 3", sans-serif';
+      ctx.textAlign = 'center';
+      let lbl = evt.title;
+      while (ctx.measureText(lbl).width > 60 && lbl.length > 3) lbl = lbl.slice(0, -1);
+      if (lbl.length < evt.title.length) lbl = lbl.slice(0, -1) + '…';
+      ctx.fillText(lbl, x, cy - r - 3);
+    }
 
     state.hitBoxes.push({ evt, tl, x1: x-r-4, y1: cy-r-4, x2: x+r+4, y2: cy+r+4 });
   }
@@ -6019,7 +6025,7 @@ function lodRangeOpacity(evt) {
 // Basé sur l'espacement moyen entre points
 function lodPointsOpacity(events) {
   const points = events.filter(e => e.type === 'point' && !e._auto);
-  if (points.length <= 1) return 1;
+  if (points.length <= 1) return { opacity: 1, minGap: Infinity };
 
   // Ne considérer que les points dans la zone visible (+/- marge)
   const margin = W * 0.1;
@@ -6027,23 +6033,23 @@ function lodPointsOpacity(events) {
     const px = dayToX(tupleToDays(e.date));
     return px >= -margin && px <= W + margin;
   });
-  if (visible.length <= 1) return 1;
+  if (visible.length <= 1) return { opacity: 1, minGap: Infinity };
 
   // Trier par position X
   const sorted = visible
     .map(e => dayToX(tupleToDays(e.date)))
     .sort((a, b) => a - b);
 
-  // Espacement MINIMUM entre points adjacents (pas la moyenne)
+  // Espacement MINIMUM entre points adjacents
   let minGap = Infinity;
   for (let i = 1; i < sorted.length; i++) {
     minGap = Math.min(minGap, sorted[i] - sorted[i-1]);
   }
 
-  if (minGap >= LOD_POINT_MIN_PX) return 1;
+  if (minGap >= LOD_POINT_MIN_PX) return { opacity: 1, minGap };
   const ratio = minGap / LOD_POINT_MIN_PX;
-  if (ratio >= 0.5) return (ratio - 0.5) * 2;
-  return 0;
+  const opacity = ratio >= 0.5 ? (ratio - 0.5) * 2 : 0;
+  return { opacity, minGap };
 }
 
 // Obtenir l'opacité lissée (avec animation) pour un événement
@@ -6193,7 +6199,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.2</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.3</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
