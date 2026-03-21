@@ -2656,7 +2656,8 @@ function drawRow(tl, rowTop) {
       if (evt.type === 'range') {
         drawHiddenTriangle(hiddenX, evtBottom, evt.color || tl.color);
       } else {
-        drawHiddenTriangle(hiddenX, mainCy + (evt.symbolSize || 6) + 8, evt.color || tl.color);
+        // Pour les points : triangle juste sous la base de la piste
+        drawHiddenTriangle(hiddenX, rowTop + mainH + 4, evt.color || tl.color);
       }
     }
   });
@@ -2862,14 +2863,14 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
-    // Positionner à la base de la piste principale
-    const ptY = rowTop + mainH - r - 4;
+    // Positionné à la base de la piste (rowH = mainH passé en paramètre)
+    const ptY = rowTop + rowH - r - 4;
 
     // Tige verticale du bas vers le point
     ctx.strokeStyle = hexToRgba(col, 0.4);
     ctx.lineWidth = 1;
     ctx.setLineDash(isFuturePoint ? [2,3] : [2,4]);
-    ctx.beginPath(); ctx.moveTo(x, rowTop + mainH - 2); ctx.lineTo(x, ptY - r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, rowTop + rowH - 2); ctx.lineTo(x, ptY - r); ctx.stroke();
     ctx.setLineDash([]);
 
     // Halo
