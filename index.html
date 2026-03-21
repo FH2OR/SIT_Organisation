@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.1</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.2</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6029,20 +6029,19 @@ function lodPointsOpacity(events) {
   });
   if (visible.length <= 1) return 1;
 
-  // Trier par date et calculer l'espacement moyen en px
+  // Trier par position X
   const sorted = visible
-    .map(e => ({ px: dayToX(tupleToDays(e.date)) }))
-    .sort((a, b) => a.px - b.px);
+    .map(e => dayToX(tupleToDays(e.date)))
+    .sort((a, b) => a - b);
 
-  let totalGap = 0;
+  // Espacement MINIMUM entre points adjacents (pas la moyenne)
+  let minGap = Infinity;
   for (let i = 1; i < sorted.length; i++) {
-    totalGap += sorted[i].px - sorted[i-1].px;
+    minGap = Math.min(minGap, sorted[i] - sorted[i-1]);
   }
-  const avgGap = totalGap / (sorted.length - 1);
 
-  if (avgGap >= LOD_POINT_MIN_PX) return 1;
-  // Fondu progressif
-  const ratio = avgGap / LOD_POINT_MIN_PX;
+  if (minGap >= LOD_POINT_MIN_PX) return 1;
+  const ratio = minGap / LOD_POINT_MIN_PX;
   if (ratio >= 0.5) return (ratio - 0.5) * 2;
   return 0;
 }
@@ -6194,7 +6193,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.1</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.2</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
