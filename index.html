@@ -602,6 +602,13 @@
   .fc-sep { height: 1px; background: var(--border); margin: 10px 0; }
   .fc-label { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
   .fc-comment { font-size: 14px; color: var(--text-mid); line-height: 1.6; }
+  .fc-zone-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-dim);
+    margin: 4px 0 2px;
+  }
+  .fc-zone-icon { font-size: 13px; flex-shrink: 0; }
+  .fc-zone-text { font-style: italic; }
   .fc-edit-btn {
     margin-top: 14px; width: 100%; padding: 8px;
     background: transparent; border: 1px solid var(--border);
@@ -1295,7 +1302,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.6.9</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.1</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -1561,6 +1568,11 @@
         </div>
         <div class="fc-date" id="fc-date"></div>
         <div class="fc-duration" id="fc-duration" style="display:none"></div>
+        <!-- Zone géographique -->
+        <div class="fc-zone-row" id="fc-zone-row" style="display:none">
+          <span class="fc-zone-icon">🌍</span>
+          <span class="fc-zone-text" id="fc-zone-text"></span>
+        </div>
         <!-- Photo affichage -->
         <div class="fc-photo-wrap" id="fc-photo-wrap" style="display:none">
           <img id="fc-photo-img" src="" alt="">
@@ -4279,6 +4291,16 @@ function showFCDetail(evt, tl) {
   }
   document.getElementById('fc-comment').textContent = evt.comment || '(aucun commentaire)';
 
+  // ── Zone géographique ────────────────────────────────────
+  const zoneRow  = document.getElementById('fc-zone-row');
+  const zoneText = document.getElementById('fc-zone-text');
+  if (evt.zone) {
+    zoneText.textContent = evt.zone;
+    zoneRow.style.display = 'flex';
+  } else {
+    zoneRow.style.display = 'none';
+  }
+
   // ── Photo ────────────────────────────────────────────────
   const wrap = document.getElementById('fc-photo-wrap');
   const img  = document.getElementById('fc-photo-img');
@@ -4870,6 +4892,7 @@ async function dbPullCatalogue() {
           color:      e.couleur || cat.color,
           comment:    e.commentaire || '',
           photo:      e.photo || null,
+          zone:       e.zone || null,
           importance: e.importance != null ? e.importance : 5
         });
       } else {
@@ -4883,6 +4906,7 @@ async function dbPullCatalogue() {
           symbolSize: e.taille_symbole || 6,
           comment:    e.commentaire || '',
           photo:      e.photo || null,
+          zone:       e.zone || null,
           importance: e.importance != null ? e.importance : 5
         });
       }
@@ -6152,7 +6176,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.6.9</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.1</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
