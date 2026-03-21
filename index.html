@@ -607,7 +607,6 @@
     font-size: 12px; color: var(--text-dim);
     margin: 4px 0 2px;
   }
-  .fc-zone-icon { font-size: 13px; flex-shrink: 0; }
   .fc-zone-text { font-style: italic; }
   .fc-edit-btn {
     margin-top: 14px; width: 100%; padding: 8px;
@@ -1302,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.2</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.0</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -1568,10 +1567,8 @@
         </div>
         <div class="fc-date" id="fc-date"></div>
         <div class="fc-duration" id="fc-duration" style="display:none"></div>
-        <!-- Zone géographique -->
         <div class="fc-zone-row" id="fc-zone-row" style="display:none">
-          <span class="fc-zone-icon">🌍</span>
-          <span class="fc-zone-text" id="fc-zone-text"></span>
+          <span>🌍</span><span class="fc-zone-text" id="fc-zone-text"></span>
         </div>
         <!-- Photo affichage -->
         <div class="fc-photo-wrap" id="fc-photo-wrap" style="display:none">
@@ -2064,12 +2061,10 @@ function computeTracks(events) {
     .filter(e => e.type === 'range' && !e._auto)
     .sort((a, b) => evtStartDays(a) - evtStartDays(b));
 
-  const trackMap   = new Map();   // evtId → trackIndex
-  const trackEnds  = [];          // fin courante (en jours) de chaque track
-  const altMap     = new Map();   // evtId → alternance 0/1 par track
-
-  // Compteur d'alternance par track
-  const trackAltCount = [];
+  const trackMap      = new Map(); // evtId → trackIndex
+  const trackEnds     = [];        // fin courante (en jours) de chaque track
+  const altMap        = new Map(); // evtId → 0 ou 1 (alternance par track)
+  const trackAltCount = [];        // nombre de ranges placés par track
 
   ranges.forEach(evt => {
     const s = evtStartDays(evt);
@@ -2082,7 +2077,6 @@ function computeTracks(events) {
     } else {
       trackEnds[t] = e;
     }
-    // Alternance : pair/impair selon le nombre de ranges déjà placés sur ce track
     altMap.set(evt.id, trackAltCount[t] % 2);
     trackAltCount[t]++;
     trackMap.set(evt.id, t);
@@ -2656,8 +2650,7 @@ function drawRow(tl, rowTop) {
       if (evt.type === 'range') {
         drawHiddenTriangle(hiddenX, evtBottom, evt.color || tl.color);
       } else {
-        // Pour les points : triangle juste sous la base de la piste
-        drawHiddenTriangle(hiddenX, rowTop + mainH + 4, evt.color || tl.color);
+        drawHiddenTriangle(hiddenX, mainCy + (evt.symbolSize || 6) + 8, evt.color || tl.color);
       }
     }
   });
@@ -2724,11 +2717,9 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
   const baseCol = evt.color || tl.color;
-
-  // Alternance de luminosité pour les ranges consécutifs
-  const alt = altMap && altMap.get(evt.id);
-  const col = (evt.type === 'range' && alt === 1)
-    ? darken(baseCol, 0.18)   // ton plus sombre pour les impairs
+  // Alternance clair/sombre pour les ranges consécutifs
+  const col = (evt.type === 'range' && altMap && altMap.get(evt.id) === 1)
+    ? darken(baseCol, 0.18)
     : baseCol;
 
   if (evt.type === 'range') {
@@ -2853,7 +2844,7 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
     state.hitBoxes.push({ evt, tl, x1, y1: top, x2: endless ? W : x2, y2: top + h });
 
   } else {
-    // Point — positionné à la base de la piste, label sur le côté
+    // Point
     const x = dayToX(evtStartDays(evt));
     if (x < -20 || x > W + 20) return;
 
@@ -2863,14 +2854,14 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
-    // Positionné à la base de la piste (rowH = mainH passé en paramètre)
+    // Point positionné à la base de la piste (rowH = mainH passé en paramètre)
     const ptY = rowTop + rowH - r - 4;
 
-    // Tige verticale du bas vers le point
+    // Tige verticale (du bas de piste vers le point)
     ctx.strokeStyle = hexToRgba(col, 0.4);
     ctx.lineWidth = 1;
     ctx.setLineDash(isFuturePoint ? [2,3] : [2,4]);
-    ctx.beginPath(); ctx.moveTo(x, rowTop + rowH - 2); ctx.lineTo(x, ptY - r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, rowTop + rowH - 1); ctx.lineTo(x, ptY - r); ctx.stroke();
     ctx.setLineDash([]);
 
     // Halo
@@ -2899,15 +2890,14 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap) {
 
     // Label sur le côté (droite par défaut, gauche si proche du bord droit)
     ctx.font = (isHov || isSel ? 'bold 13px' : '13px') + ' "Source Sans 3", sans-serif';
-    const lbl = evt.title.length > 18 ? evt.title.slice(0, 17) + '…' : evt.title;
+    const lbl = evt.title.length > 20 ? evt.title.slice(0, 19) + '…' : evt.title;
     const lblW = ctx.measureText(lbl).width;
-    const onRight = x + r + 4 + lblW < W - 4;
+    const onRight = x + r + 5 + lblW < W - 4;
     ctx.textAlign = onRight ? 'left' : 'right';
-    const lblX = onRight ? x + r + 4 : x - r - 4;
     ctx.fillStyle = isFuturePoint
       ? hexToRgba(col, 0.6)
       : (isHov || isSel ? 'white' : hexToRgba(col, 0.9));
-    ctx.fillText(lbl, lblX, ptY + 4);
+    ctx.fillText(lbl, onRight ? x + r + 5 : x - r - 5, ptY + 4);
 
     state.hitBoxes.push({ evt, tl, x1: x-r-6, y1: ptY-r-6, x2: x+r+6, y2: ptY+r+6 });
   }
@@ -2991,8 +2981,7 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
   const baseCol = evt.color || tl.color;
-  const alt = altMap && altMap.get(evt.id);
-  const col = (evt.type === 'range' && alt === 1)
+  const col = (evt.type === 'range' && altMap && altMap.get(evt.id) === 1)
     ? darken(baseCol, 0.18)
     : baseCol;
 
@@ -4315,15 +4304,11 @@ function showFCDetail(evt, tl) {
   }
   document.getElementById('fc-comment').textContent = evt.comment || '(aucun commentaire)';
 
-  // ── Zone géographique ────────────────────────────────────
-  const zoneRow  = document.getElementById('fc-zone-row');
+  // ── Zone géographique ─────────────────────────────────────
+  const zoneRow = document.getElementById('fc-zone-row');
   const zoneText = document.getElementById('fc-zone-text');
-  if (evt.zone) {
-    zoneText.textContent = evt.zone;
-    zoneRow.style.display = 'flex';
-  } else {
-    zoneRow.style.display = 'none';
-  }
+  if (evt.zone) { zoneText.textContent = evt.zone; zoneRow.style.display = 'flex'; }
+  else { zoneRow.style.display = 'none'; }
 
   // ── Photo ────────────────────────────────────────────────
   const wrap = document.getElementById('fc-photo-wrap');
@@ -6200,7 +6185,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.2</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.0</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
