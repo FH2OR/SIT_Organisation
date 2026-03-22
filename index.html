@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.15</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.16</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2235,14 +2235,10 @@ function rowLayout(tl, rowTop) {
   const extra = extraTracksForHidden(tl.events);
   const tc = trackCount + extra;
 
-  const { slots, totalH: mainTotalH, rangeRefToTrack, tracksWithPoints, hasOrphans, orphanPtTop: oPtTop, orphanPtCy: oPtCy }
+  const { slots, totalH: mainTotalH, rangeRefToTrack, tracksWithPoints, hasOrphans, orphanPtTop, orphanPtCy }
     = computeSlots(tl.events, rowTop, ROW_H, TRACK_SLOT, tc);
 
-  // mainCy = centre du slot 0
   const mainCy = slots.length ? slots[0].rangeCy : rowTop + ROW_H / 2;
-  const orphanPtTop = rowTop + oPtTop - (slots.length ? 0 : 0); // déjà absolu depuis rowTop
-  // Recalculer en absolu
-  const absSlots = computeSlots(tl.events, rowTop, ROW_H, TRACK_SLOT, tc);
 
   let subOffset = mainTotalH;
   const subs = activeSubs.map(sub => {
@@ -2256,10 +2252,8 @@ function rowLayout(tl, rowTop) {
     return result;
   });
 
-  return { mainCy, slots: absSlots.slots, rangeRefToTrack: absSlots.rangeRefToTrack,
-           tracksWithPoints: absSlots.tracksWithPoints,
-           orphanPtTop: absSlots.orphanPtTop, orphanPtCy: absSlots.orphanPtCy,
-           hasOrphans: absSlots.hasOrphans,
+  return { mainCy, slots, rangeRefToTrack, tracksWithPoints,
+           orphanPtTop, orphanPtCy, hasOrphans,
            totalH: subOffset, subs };
 }
 
@@ -2949,12 +2943,11 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     const x2 = endless ? W + 1 : dayToX(rawX2);
     if (x2 < 0 || x1 > W) return;
 
-    // Décalage vertical selon le track — 1px de marge haut/bas pour la séparation
-    const track    = (trackMap && trackMap.get(evt.id)) || 0;
-    const slotH    = ROW_H - 8 - (track > 0 ? TRACK_GAP : 0);
-    const trackCy  = rowTop + TRACK_SLOT * track + ROW_H / 2 + track * (2 + TRACK_GAP);
-    const h        = slotH;
-    const top      = trackCy - h / 2;
+    // cy est le centre exact du slot (passé par le caller)
+    const trackCy = cy;
+    const slotH   = rowH - 8;
+    const h       = slotH;
+    const top     = trackCy - h / 2;
 
     // Calculer la position X d'aujourd'hui
     const nowDay = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
@@ -3280,9 +3273,9 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap, showLabels = 
     const x2 = endless ? W + 1 : dayToX(rawX2);
     if (x2 < 0 || x1 > W) return;
 
-    const track   = (trackMap && trackMap.get(evt.id)) || 0;
-    const slotH   = SUB_TRACK - 8 - (track > 0 ? SUB_GAP : 0);
-    const trackCy = subTop + SUB_TRACK / 2 + track * (SUB_SLOT + SUB_GAP);
+    // cy est le centre exact du slot (passé par le caller)
+    const trackCy = cy;
+    const slotH   = subH - 8;
     const h       = slotH;
     const top     = trackCy - h / 2;
 
@@ -6568,7 +6561,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.15</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.16</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
