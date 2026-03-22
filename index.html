@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.5</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.6</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2644,23 +2644,25 @@ function drawRow(tl, rowTop) {
       drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap, altMap, showPointLabels);
       ctx.globalAlpha = 1;
     } else {
-      // Événement caché : dessiner un triangle ▼ à sa position temporelle
+      // Événement caché : triangle à sa position temporelle SEULEMENT si dans la zone visible
+      let triX, evtX1, evtX2;
+      if (evt.type === 'range') {
+        evtX1 = dayToX(evtStartDays(evt));
+        evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
+        triX  = (evtX1 + evtX2) / 2;
+        // N'afficher que si le range chevauche la zone visible
+        if (evtX2 < 0 || evtX1 > W) return;
+      } else {
+        triX  = dayToX(tupleToDays(evt.date));
+        evtX1 = triX; evtX2 = triX;
+        // N'afficher que si le point est dans la zone visible
+        if (triX < -20 || triX > W + 20) return;
+      }
       const track   = (trackMap && trackMap.get(evt.id)) || 0;
       const trackCy = rowTop + TRACK_SLOT * track + ROW_H / 2 + track * (2 + TRACK_GAP);
       const triY    = trackCy + (ROW_H - 8) / 2 + 4;
-      let triX;
-      if (evt.type === 'range') {
-        const x1 = dayToX(evtStartDays(evt));
-        const x2 = evt.end ? dayToX(evtEndDays(evt)) : W;
-        triX = (x1 + x2) / 2;
-      } else {
-        triX = dayToX(tupleToDays(evt.date));
-      }
-      // N'afficher que si la position est dans la zone visible
-      if (triX >= -10 && triX <= W + 10) {
-        triX = Math.max(4, Math.min(triX, W - 4));
-        drawHiddenTriangle(triX, triY, evt.color || tl.color);
-      }
+      triX = Math.max(4, Math.min(triX, W - 4));
+      drawHiddenTriangle(triX, triY, evt.color || tl.color);
     }
   });
 
@@ -2706,22 +2708,21 @@ function drawRow(tl, rowTop) {
         drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap, subAltMap, showSubPointLabels);
         ctx.globalAlpha = 1;
       } else {
-        // Événement caché : triangle à sa position temporelle propre
+        let triX, evtX1, evtX2;
+        if (evt.type === 'range') {
+          evtX1 = dayToX(evtStartDays(evt));
+          evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
+          triX  = (evtX1 + evtX2) / 2;
+          if (evtX2 < 0 || evtX1 > W) return;
+        } else {
+          triX  = dayToX(tupleToDays(evt.date));
+          if (triX < -20 || triX > W + 20) return;
+        }
         const track   = (subTrackMap && subTrackMap.get(evt.id)) || 0;
         const trackCy = subTop + SUB_TRACK / 2 + track * (SUB_SLOT + SUB_GAP);
         const triY    = trackCy + (SUB_TRACK - 8) / 2 + 4;
-        let triX;
-        if (evt.type === 'range') {
-          const x1 = dayToX(evtStartDays(evt));
-          const x2 = evt.end ? dayToX(evtEndDays(evt)) : W;
-          triX = (x1 + x2) / 2;
-        } else {
-          triX = dayToX(tupleToDays(evt.date));
-        }
-        if (triX >= -10 && triX <= W + 10) {
-          triX = Math.max(4, Math.min(triX, W - 4));
-          drawHiddenTriangle(triX, triY, evt.color || sub.color);
-        }
+        triX = Math.max(4, Math.min(triX, W - 4));
+        drawHiddenTriangle(triX, triY, evt.color || sub.color);
       }
     });
   });
@@ -6248,7 +6249,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.5</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.6</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
