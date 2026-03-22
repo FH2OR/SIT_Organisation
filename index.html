@@ -4385,8 +4385,12 @@ function addFromCatalogue(id, ensureParentId) {
   }
 
   // Insérer chaque ancêtre manquant dans state.timelines (racine en premier)
+  // Si déjà présent mais désactivé, le réactiver
   ancestors.forEach(ancestor => {
-    if (!state.timelines.find(t => t.id === ancestor.id)) {
+    const existing = state.timelines.find(t => t.id === ancestor.id);
+    if (existing) {
+      if (!existing.enabled) { existing.enabled = true; if (ancestor.parentId) syncParentRange(ancestor.parentId); }
+    } else {
       const entry = {
         id:      ancestor.id,
         title:   ancestor.title,
@@ -4404,8 +4408,14 @@ function addFromCatalogue(id, ensureParentId) {
     }
   });
 
-  // ── Charger la rubrique elle-même si absente ───────────────
-  if (!state.timelines.find(t => t.id === id)) {
+  // ── Charger la rubrique elle-même — réactiver si déjà présente ─
+  const existingTl = state.timelines.find(t => t.id === id);
+  if (existingTl) {
+    if (!existingTl.enabled) {
+      existingTl.enabled = true;
+      if (existingTl.parentId) syncParentRange(existingTl.parentId);
+    }
+  } else {
     const parentId = cat.parentId || ensureParentId || null;
     const entry = {
       id:      cat.id,
@@ -4429,7 +4439,10 @@ function addFromCatalogue(id, ensureParentId) {
   if (!cat.parentId) {
     const subs = catalogueData.filter(c => c.parentId === id);
     subs.forEach(sub => {
-      if (!state.timelines.find(t => t.id === sub.id)) {
+      const existingSub = state.timelines.find(t => t.id === sub.id);
+      if (existingSub) {
+        if (!existingSub.enabled) existingSub.enabled = true;
+      } else {
         const subEntry = {
           id:          sub.id,
           title:       sub.title,
@@ -4442,7 +4455,6 @@ function addFromCatalogue(id, ensureParentId) {
         state.timelines.push(subEntry);
       }
     });
-    // Recalculer le range englobant après injection de toutes les sous-rubriques
     syncParentRange(id);
   }
 
