@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.19</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.20</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -4243,6 +4243,7 @@ function deleteTimeline(id) {
     clearFCDetail();
   }
   buildFA();
+  buildCatalogueList(document.getElementById('cat-search').value);
   render();
   autoSaveState();
 }
@@ -6590,7 +6591,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.19</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.20</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
