@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.12</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.13</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2751,36 +2751,8 @@ function drawRow(tl, rowTop) {
 
     tl.events.forEach(evt => {
       if (evt._auto || evt.type !== 'point') return;
-      const opacity = getLodOpacity(evt.id, pointTargetOpacity);
-
-      if (opacity > 0.01) {
-        // Point visible → dans la piste points
-        ctx.globalAlpha = opacity;
-        drawEvent(evt, tl, ptCy, ptTop, PT_TRACK, trackMap, altMap, showPointLabels);
-        ctx.globalAlpha = 1;
-      } else {
-        // Règle 2 : point caché → triangle à la base du range référent (dep)
-        if (!evt.dep) return;
-        const parentEntry = refMap.get(evt.dep);
-        if (!parentEntry || !parentEntry.evt) return;
-        const parentEvt = parentEntry.evt;
-        if (!tl.events.includes(parentEvt)) return;
-        const parentOp = lodRangeOpacity(parentEvt);
-        if (parentOp < 0.1) return;
-
-        // X = date du point
-        const triX = dayToX(tupleToDays(evt.date));
-        if (triX < -20 || triX > W + 20) return;
-
-        // Y = base du track du range référent
-        const parentTrack = (trackMap && trackMap.get(parentEvt.id)) || 0;
-        const trackCy = rowTop + parentTrack * TRACK_SLOT + ROW_H / 2;
-        const triY = trackCy + ROW_H / 2 - 4;
-
-        ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
-        drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), triY, evt.color || tl.color, false);
-        ctx.globalAlpha = 1;
-      }
+      // Les points sont toujours visibles (règle 1)
+      drawEvent(evt, tl, ptCy, ptTop, PT_TRACK, trackMap, altMap, showPointLabels);
     });
   }
   // ── Pistes des sous-rubriques ───────────────────────────────
@@ -2866,29 +2838,8 @@ function drawRow(tl, rowTop) {
 
       sub.events.forEach(evt => {
         if (evt._auto || evt.type !== 'point') return;
-        const opacity = getLodOpacity(evt.id, subPointOpacity);
-        if (opacity > 0.01) {
-          ctx.globalAlpha = opacity;
-          drawSubEvent(evt, sub, subPtCy, subPtTop, PT_TRACK, subTrackMap, subAltMap, showSubPointLabels);
-          ctx.globalAlpha = 1;
-        } else {
-          // Règle 2 : point caché → triangle à la base du range référent
-          if (!evt.dep) return;
-          const parentEntry = refMap.get(evt.dep);
-          if (!parentEntry || !parentEntry.evt) return;
-          const parentEvt = parentEntry.evt;
-          if (!sub.events.includes(parentEvt)) return;
-          const parentOp = lodRangeOpacity(parentEvt);
-          if (parentOp < 0.1) return;
-          const triX = dayToX(tupleToDays(evt.date));
-          if (triX < -20 || triX > W + 20) return;
-          const parentTrack = (subTrackMap && subTrackMap.get(parentEvt.id)) || 0;
-          const trackCy = subTop + parentTrack * SUB_SLOT + SUB_TRACK / 2;
-          const triY    = trackCy + SUB_TRACK / 2 - 4;
-          ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
-          drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), triY, evt.color || sub.color, false);
-          ctx.globalAlpha = 1;
-        }
+        // Les points sont toujours visibles (règle 1)
+        drawSubEvent(evt, sub, subPtCy, subPtTop, PT_TRACK, subTrackMap, subAltMap, showSubPointLabels);
       });
     }
   });
@@ -6394,10 +6345,9 @@ function lodPointsOpacity(events) {
     minGap = Math.min(minGap, sorted[i] - sorted[i-1]);
   }
 
-  if (minGap >= LOD_POINT_MIN_PX) return { opacity: 1, minGap };
-  const ratio = minGap / LOD_POINT_MIN_PX;
-  const opacity = ratio >= 0.5 ? (ratio - 0.5) * 2 : 0;
-  return { opacity, minGap };
+  // Les points sont TOUJOURS visibles (opacity: 1)
+  // Seul minGap est utilisé pour décider d'afficher les labels
+  return { opacity: 1, minGap };
 }
 
 // Obtenir l'opacité lissée (avec animation) pour un événement
@@ -6546,7 +6496,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.12</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.13</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
