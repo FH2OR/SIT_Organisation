@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.7</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.8</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2650,6 +2650,8 @@ function drawRow(tl, rowTop) {
         ? lodRangeOpacity(evt) < 0.1
         : pointTargetOpacity < 0.1;
       if (!reallyHidden) return; // en transition → ne pas afficher de triangle
+      // Ne pas afficher de triangle si l'événement ne peut jamais devenir visible
+      if (!canBecomeVisible(evt, tl.events)) return;
 
       let triX, evtX1, evtX2;
       if (evt.type === 'range') {
@@ -2716,6 +2718,7 @@ function drawRow(tl, rowTop) {
           ? lodRangeOpacity(evt) < 0.1
           : subPointOpacity < 0.1;
         if (!reallyHidden) return;
+        if (!canBecomeVisible(evt, sub.events)) return;
 
         let triX, evtX1, evtX2;
         if (evt.type === 'range') {
@@ -3027,13 +3030,48 @@ function hiddenNearbyX(visibleEvt, allEvents, today) {
   return null; // remplacé par hiddenNeighborX
 }
 
+// Vérifie si un événement peut physiquement devenir visible en zoomant au max
+function canBecomeVisible(evt, allEvents) {
+  const MAX_SCALE = 500; // px/jour
+  if (evt.type === 'range') {
+    if (!evt.end) return true; // sans fin → toujours visible
+    const dur = Math.abs(evtEndDays(evt) - evtStartDays(evt));
+    const durationYears = dur / 365.25;
+    if (durationYears >= LOD_RANGE_PERMANENT_ANS) return true;
+    // Peut-il atteindre LOD_RANGE_MIN_PX au zoom max ?
+    return dur * MAX_SCALE >= LOD_RANGE_MIN_PX;
+  } else {
+    // Point : peut-il avoir un espacement suffisant au zoom max ?
+    const points = allEvents.filter(e => e.type === 'point' && !e._auto);
+    if (points.length <= 1) return true;
+    const sorted = points
+      .map(e => tupleToDays(e.date))
+      .sort((a, b) => a - b);
+    let minGapDays = Infinity;
+    for (let i = 1; i < sorted.length; i++) {
+      minGapDays = Math.min(minGapDays, sorted[i] - sorted[i-1]);
+    }
+    return minGapDays * MAX_SCALE >= LOD_POINT_MIN_PX;
+  }
+}
+
 function drawHiddenTriangle(x, y, col) {
-  const size = 5; // demi-base du triangle
-  ctx.fillStyle = hexToRgba(col, 0.75);
+  const size = 7; // demi-base (était 5)
+  // Contour blanc pour le contraste
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(x - size, y - size * 1.2); // coin gauche (haut)
-  ctx.lineTo(x + size, y - size * 1.2); // coin droit (haut)
-  ctx.lineTo(x, y);                     // pointe en bas
+  ctx.moveTo(x - size, y - size * 1.3);
+  ctx.lineTo(x + size, y - size * 1.3);
+  ctx.lineTo(x, y);
+  ctx.closePath();
+  ctx.stroke();
+  // Remplissage couleur opaque
+  ctx.fillStyle = hexToRgba(col, 0.92);
+  ctx.beginPath();
+  ctx.moveTo(x - size, y - size * 1.3);
+  ctx.lineTo(x + size, y - size * 1.3);
+  ctx.lineTo(x, y);
   ctx.closePath();
   ctx.fill();
 }
@@ -6269,7 +6307,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.7</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.8</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
