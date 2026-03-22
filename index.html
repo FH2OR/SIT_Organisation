@@ -2084,7 +2084,7 @@ function computeTracksFor(tl) {
   const evLen = tl.events.length;
   const cached = _trackCache.get(key);
   if (cached && cached.eventsLen === evLen) return cached;
-  const result = computeTracksFor(tl);
+  const result = computeTracks(tl.events);
   _trackCache.set(key, { ...result, eventsLen: evLen });
   return result;
 }
