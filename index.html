@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.13</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.14</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2161,16 +2161,41 @@ function hasPoints(events) {
   return events.some(e => e.type === 'point' && !e._auto);
 }
 
+// Retourne les pistes points : Map<parentRef, ptTrackIndex>
+// Une piste par range parent ayant des points dépendants
+// Plus une piste "orphelins" (index = -1) pour les points sans dep ou dep introuvable
+function pointTracksFor(events) {
+  const ptMap = new Map(); // parentRef → ptTrackIndex
+  let idx = 0;
+
+  // Refs des ranges de cette timeline
+  const rangeRefs = new Set(
+    events.filter(e => e.type === 'range' && !e._auto && e.ref).map(e => e.ref)
+  );
+
+  events.filter(e => e.type === 'point' && !e._auto).forEach(e => {
+    const key = (e.dep && rangeRefs.has(e.dep)) ? e.dep : '__orphan__';
+    if (!ptMap.has(key)) ptMap.set(key, idx++);
+  });
+
+  return ptMap; // size = nombre de pistes points nécessaires
+}
+
+// Hauteur totale des pistes points d'une timeline
+function ptHeight(events) {
+  return pointTracksFor(events).size * PT_TRACK;
+}
+
 function rowHeight(tl) {
   const activeSubs = state.timelines.filter(s => s.parentId === tl.id && s.enabled);
   const { trackCount } = computeTracksFor(tl);
   const extra = extraTracksForHidden(tl.events);
   const mainH = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
-  const ptH   = hasPoints(tl.events) ? PT_TRACK : 0;
+  const ptH   = ptHeight(tl.events);
   return mainH + ptH + activeSubs.reduce((sum, sub) => {
     const { trackCount: tc } = computeTracksFor(sub);
     const subExtra = extraTracksForHidden(sub.events);
-    const subPtH = hasPoints(sub.events) ? PT_TRACK : 0;
+    const subPtH = ptHeight(sub.events);
     return sum + SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT + subPtH;
   }, 0);
 }
@@ -2179,25 +2204,26 @@ function rowLayout(tl, rowTop) {
   const activeSubs = state.timelines.filter(s => s.parentId === tl.id && s.enabled);
   const { trackCount } = computeTracksFor(tl);
   const extra = extraTracksForHidden(tl.events);
-  const mainH  = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
-  const ptH    = hasPoints(tl.events) ? PT_TRACK : 0;
-  const mainCy = rowTop + mainH / 2;
-  const ptTop  = rowTop + mainH;   // piste points juste sous les ranges
-  const ptCy   = ptTop + PT_TRACK / 2;
+  const mainH   = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
+  const ptTracks = pointTracksFor(tl.events);   // Map<parentRef, ptTrackIdx>
+  const ptH      = ptTracks.size * PT_TRACK;
+  const mainCy   = rowTop + mainH / 2;
+  const ptTop    = rowTop + mainH;               // début de la zone points
 
   let subOffset = mainH + ptH;
   const subs = activeSubs.map(sub => {
     const { trackCount: tc } = computeTracksFor(sub);
     const subExtra = extraTracksForHidden(sub.events);
-    const subH   = SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT;
-    const subPtH = hasPoints(sub.events) ? PT_TRACK : 0;
-    const cy     = rowTop + subOffset + subH / 2;
-    const result = { sub, cy, subH, subTop: rowTop + subOffset, subPtH };
+    const subH      = SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT;
+    const subPtTracks = pointTracksFor(sub.events);
+    const subPtH    = subPtTracks.size * PT_TRACK;
+    const cy        = rowTop + subOffset + subH / 2;
+    const result    = { sub, cy, subH, subTop: rowTop + subOffset, subPtH, subPtTracks };
     subOffset += subH + subPtH;
     return result;
   });
 
-  return { mainCy, mainH, ptTop, ptCy, ptH, totalH: subOffset, subs };
+  return { mainCy, mainH, ptTop, ptH, ptTracks, totalH: subOffset, subs };
 }
 
 function rowHeightOf(tl) { return rowHeight(tl); }
@@ -2660,7 +2686,7 @@ function drawGrid() {
 
 // ── Row ───────────────────────────────────────────────────────
 function drawRow(tl, rowTop) {
-  const { mainCy, mainH, ptTop, ptCy, ptH, totalH, subs } = rowLayout(tl, rowTop);
+  const { mainCy, mainH, ptTop, ptH, ptTracks, totalH, subs } = rowLayout(tl, rowTop);
   const { trackMap, trackCount, altMap } = computeTracksFor(tl);
 
   // Fond global de la ligne
@@ -2730,33 +2756,43 @@ function drawRow(tl, rowTop) {
     ctx.globalAlpha = 1;
   });
 
-  // ── Piste points (séparée, toujours présente si la rubrique a des points) ──
+  // ── Pistes points : une piste par range parent ──────────────
   if (ptH > 0) {
-    const ptOpacity = getLodOpacity('__pt_' + tl.id, pointTargetOpacity);
-    const hasVisiblePts  = ptOpacity > 0.01;
-    const hasHiddenPts   = tl.events.some(e => !e._auto && e.type === 'point') && pointTargetOpacity < 0.1;
+    // Helper : Y du centre de la piste d'un parentRef donné
+    const ptCyFor = (parentRef) => {
+      const idx = ptTracks.get(parentRef) ?? ptTracks.get('__orphan__') ?? 0;
+      return ptTop + idx * PT_TRACK + PT_TRACK / 2;
+    };
 
-    // Fond et axe : toujours visible si la piste existe (points visibles ou triangles)
-    {
-      const bgAlpha = Math.max(ptOpacity, hasHiddenPts ? 0.25 : 0.08);
-      ctx.globalAlpha = bgAlpha;
+    // Dessiner fond + axe pour chaque piste
+    ptTracks.forEach((idx, parentRef) => {
+      const top = ptTop + idx * PT_TRACK;
+      const cy  = top + PT_TRACK / 2;
+      ctx.globalAlpha = 0.08;
       ctx.fillStyle = hexToRgba(tl.color, 0.06);
-      ctx.fillRect(0, ptTop, W, PT_TRACK);
+      ctx.fillRect(0, top, W, PT_TRACK);
+      ctx.globalAlpha = 1;
       ctx.strokeStyle = hexToRgba(tl.color, 0.20);
       ctx.setLineDash([3, 7]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, ptCy); ctx.lineTo(W, ptCy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-    }
+    });
 
+    // Dessiner chaque point sur la piste de son range parent
     tl.events.forEach(evt => {
       if (evt._auto || evt.type !== 'point') return;
-      // Les points sont toujours visibles (règle 1)
-      drawEvent(evt, tl, ptCy, ptTop, PT_TRACK, trackMap, altMap, showPointLabels);
+      const rangeRefs = new Set(
+        tl.events.filter(e => e.type === 'range' && !e._auto && e.ref).map(e => e.ref)
+      );
+      const key = (evt.dep && rangeRefs.has(evt.dep)) ? evt.dep : '__orphan__';
+      if (!ptTracks.has(key)) return;
+      const ptCy = ptCyFor(key);
+      const ptTrackTop = ptTop + ptTracks.get(key) * PT_TRACK;
+      drawEvent(evt, tl, ptCy, ptTrackTop, PT_TRACK, trackMap, altMap, showPointLabels);
     });
   }
   // ── Pistes des sous-rubriques ───────────────────────────────
-  subs.forEach(({ sub, cy, subH, subTop, subPtH }) => {
+  subs.forEach(({ sub, cy, subH, subTop, subPtH, subPtTracks }) => {
     const { trackMap: subTrackMap, altMap: subAltMap } = computeTracksFor(sub);
     const subPtTop = subTop + subH;
     const subPtCy  = subPtTop + PT_TRACK / 2;
@@ -2819,27 +2855,36 @@ function drawRow(tl, rowTop) {
       ctx.globalAlpha = 1;
     });
 
-    // Piste points sous-rubrique
+    // Piste points sous-rubrique : une piste par range parent
     if (subPtH > 0) {
-      const subPtOp = getLodOpacity('__pt_' + sub.id, subPointOpacity);
-      const subHasHiddenPts = sub.events.some(e => !e._auto && e.type === 'point') && subPointOpacity < 0.1;
+      const subPtTop = subTop + subH;
+      const subRangeRefs = new Set(
+        sub.events.filter(e => e.type === 'range' && !e._auto && e.ref).map(e => e.ref)
+      );
 
-      {
-        const bgAlpha = Math.max(subPtOp, subHasHiddenPts ? 0.25 : 0.08);
-        ctx.globalAlpha = bgAlpha;
+      // Fond + axe par piste
+      subPtTracks.forEach((idx, parentRef) => {
+        const top = subPtTop + idx * PT_TRACK;
+        const cy  = top + PT_TRACK / 2;
+        ctx.globalAlpha = 0.08;
         ctx.fillStyle = hexToRgba(sub.color, 0.06);
-        ctx.fillRect(0, subPtTop, W, PT_TRACK);
+        ctx.fillRect(0, top, W, PT_TRACK);
+        ctx.globalAlpha = 1;
         ctx.strokeStyle = hexToRgba(sub.color, 0.20);
         ctx.setLineDash([3, 7]); ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(0, subPtCy); ctx.lineTo(W, subPtCy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-      }
+      });
 
+      // Dessiner chaque point sur la piste de son range parent
       sub.events.forEach(evt => {
         if (evt._auto || evt.type !== 'point') return;
-        // Les points sont toujours visibles (règle 1)
-        drawSubEvent(evt, sub, subPtCy, subPtTop, PT_TRACK, subTrackMap, subAltMap, showSubPointLabels);
+        const key = (evt.dep && subRangeRefs.has(evt.dep)) ? evt.dep : '__orphan__';
+        if (!subPtTracks.has(key)) return;
+        const idx = subPtTracks.get(key);
+        const ptCy  = subPtTop + idx * PT_TRACK + PT_TRACK / 2;
+        const ptTop2 = subPtTop + idx * PT_TRACK;
+        drawSubEvent(evt, sub, ptCy, ptTop2, PT_TRACK, subTrackMap, subAltMap, showSubPointLabels);
       });
     }
   });
@@ -6496,7 +6541,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.13</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.14</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
