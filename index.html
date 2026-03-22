@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.16</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.17</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -1884,7 +1884,7 @@ const SUB_SLOT  = 22;   // hauteur ajoutée par track supplémentaire (sous-rubr
 const SUB_GAP   =  3;   // gap vertical entre deux tracks (sous-rubrique)
 const ROW_PAD   = 10;
 const PT_R      = 7;
-const PT_TRACK  = 28;   // hauteur de la piste dédiée aux points
+const PT_TRACK  = 20;   // hauteur de la piste dédiée aux points
 
 // Retourne la hauteur totale d'une ligne (parent + sous-rubriques actives)
 // ═══════════════════════════════════════════════════════════════
@@ -3056,25 +3056,17 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     state.hitBoxes.push({ evt, tl, x1, y1: top, x2: endless ? W : x2, y2: top + h });
 
   } else {
-    // Point — centré sur la piste principale, label à droite
+    // Point — centré sur cy (axe de la piste points)
     const x = dayToX(evtStartDays(evt));
     if (x < -20 || x > W + 20) return;
 
-    const baseR = evt.symbolSize || PT_R;
-    const r = baseR + (isHov || isSel ? 3 : 0);
+    const baseR = Math.min(evt.symbolSize || PT_R, Math.floor(rowH / 2) - 1);
+    const r = baseR + (isHov || isSel ? 2 : 0);
 
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
-    // Centré sur cy (axe de la piste)
-    const ptY = cy;
-
-    // Tige verticale vers le haut (jusqu'au bord de la piste)
-    ctx.strokeStyle = hexToRgba(col, 0.35);
-    ctx.lineWidth = 1;
-    ctx.setLineDash(isFuturePoint ? [2,3] : [2,4]);
-    ctx.beginPath(); ctx.moveTo(x, ptY - r); ctx.lineTo(x, rowTop + 3); ctx.stroke();
-    ctx.setLineDash([]);
+    const ptY = cy; // centre de la piste
 
     // Halo hover/sélection
     if (isHov || isSel) {
@@ -3099,20 +3091,31 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
       );
     }
 
-    // Label à droite (ou gauche si proche du bord droit)
+    // Label : visible si showLabels ou hover/sel
+    // Anti-chevauchement : espace disponible jusqu'au prochain point à droite
     if (showLabels || isHov || isSel) {
-      ctx.font = (isHov || isSel ? 'bold 13px' : '13px') + ' "Source Sans 3", sans-serif';
-      const lbl = evt.title.length > 22 ? evt.title.slice(0, 21) + '…' : evt.title;
-      const lblW = ctx.measureText(lbl).width;
-      const onRight = x + r + 5 + lblW < W - 4;
-      ctx.textAlign = onRight ? 'left' : 'right';
-      ctx.fillStyle = isFuturePoint
-        ? hexToRgba(col, 0.6)
-        : (isHov || isSel ? 'white' : hexToRgba(col, 0.85));
-      ctx.fillText(lbl, onRight ? x + r + 5 : x - r - 5, ptY + 4);
+      ctx.font = (isHov || isSel ? 'bold 12px' : '12px') + ' "Source Sans 3", sans-serif';
+
+      // Espace disponible à droite jusqu'au prochain point (si connu via hitBoxes)
+      const nextX = state.hitBoxes
+        .filter(hb => hb.tl && hb.tl.id === tl.id && hb.evt && hb.evt.type === 'point'
+                   && hb.x1 > x + r + 4)
+        .reduce((min, hb) => Math.min(min, hb.x1), W);
+      const maxLblW = Math.max(20, nextX - x - r - 8);
+
+      const lbl = ellipsis(ctx, evt.title, maxLblW);
+      if (lbl) {
+        const lblW = ctx.measureText(lbl).width;
+        const onRight = x + r + 5 + lblW < W - 4;
+        ctx.textAlign = onRight ? 'left' : 'right';
+        ctx.fillStyle = isFuturePoint
+          ? hexToRgba(col, 0.6)
+          : (isHov || isSel ? 'white' : hexToRgba(col, 0.85));
+        ctx.fillText(lbl, onRight ? x + r + 5 : x - r - 5, ptY + 4);
+      }
     }
 
-    state.hitBoxes.push({ evt, tl, x1: x-r-6, y1: ptY-r-6, x2: x+r+6, y2: ptY+r+6 });
+    state.hitBoxes.push({ evt, tl, x1: x-r-4, y1: ptY-r-4, x2: x+r+4, y2: ptY+r+4 });
   }
 }
 
@@ -3332,7 +3335,7 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap, showLabels = 
     // Point compact sous-rubrique
     const x = dayToX(evtStartDays(evt));
     if (x < -20 || x > W + 20) return;
-    const baseR = Math.round((evt.symbolSize || PT_R) * 0.55);
+    const baseR = Math.min(Math.round((evt.symbolSize || PT_R) * 0.7), Math.floor(subH / 2) - 1);
     const r = baseR + (isHov || isSel ? 2 : 0);
 
     if (isHov || isSel) {
@@ -3350,13 +3353,18 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap, showLabels = 
     );
 
     if (showLabels || isHov || isSel) {
-      ctx.fillStyle = isHov || isSel ? 'white' : hexToRgba(col, 0.85);
-      ctx.font = (isHov || isSel ? 'bold 14px' : '14px') + ' "Source Sans 3", sans-serif';
-      ctx.textAlign = 'center';
-      let lbl = evt.title;
-      while (ctx.measureText(lbl).width > 60 && lbl.length > 3) lbl = lbl.slice(0, -1);
-      if (lbl.length < evt.title.length) lbl = lbl.slice(0, -1) + '…';
-      ctx.fillText(lbl, x, cy - r - 3);
+      ctx.font = (isHov || isSel ? 'bold 11px' : '11px') + ' "Source Sans 3", sans-serif';
+      const nextX = state.hitBoxes
+        .filter(hb => hb.tl && hb.tl.id === tl.id && hb.evt && hb.evt.type === 'point'
+                   && hb.x1 > x + r + 4)
+        .reduce((min, hb) => Math.min(min, hb.x1), W);
+      const maxLblW = Math.max(20, nextX - x - r - 6);
+      const lbl = ellipsis(ctx, evt.title, maxLblW);
+      if (lbl) {
+        ctx.fillStyle = isHov || isSel ? 'white' : hexToRgba(col, 0.85);
+        ctx.textAlign = 'left';
+        ctx.fillText(lbl, x + r + 4, cy + 4);
+      }
     }
 
     state.hitBoxes.push({ evt, tl, x1: x-r-4, y1: cy-r-4, x2: x+r+4, y2: cy+r+4 });
@@ -6561,7 +6569,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.16</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.17</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
