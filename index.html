@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.17</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.18</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2764,7 +2764,7 @@ function drawRow(tl, rowTop) {
   if (autoEvt) drawAutoRange(autoEvt, tl, mainCy, rowTop, mainH);
 
   const { minGap: pointMinGap } = lodPointsOpacity(tl.events);
-  const showPointLabels = pointMinGap >= LOD_POINT_MIN_PX * 2;
+  const showPointLabels = true; // labels toujours affichés, l'ellipsis gère le chevauchement
 
   // ── Ranges visibles ──────────────────────────────────────────
   tl.events.forEach(evt => {
@@ -2857,7 +2857,7 @@ function drawRow(tl, rowTop) {
     ctx.fillText('↳ ' + sub.title, 6, subMainCy + 3);
 
     const { minGap: subPointMinGap } = lodPointsOpacity(sub.events);
-    const showSubPointLabels = subPointMinGap >= LOD_POINT_MIN_PX * 2;
+    const showSubPointLabels = true; // labels toujours affichés
 
     sub.events.forEach(evt => {
       if (evt._auto || evt.type !== 'range') return;
@@ -3096,11 +3096,13 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     if (showLabels || isHov || isSel) {
       ctx.font = (isHov || isSel ? 'bold 12px' : '12px') + ' "Source Sans 3", sans-serif';
 
-      // Espace disponible à droite jusqu'au prochain point (si connu via hitBoxes)
-      const nextX = state.hitBoxes
-        .filter(hb => hb.tl && hb.tl.id === tl.id && hb.evt && hb.evt.type === 'point'
-                   && hb.x1 > x + r + 4)
-        .reduce((min, hb) => Math.min(min, hb.x1), W);
+      // Trouver le prochain point à droite sur la même piste (même rowTop)
+      const siblingXs = tl.events
+        .filter(e => !e._auto && e.type === 'point')
+        .map(e => dayToX(evtStartDays(e)))
+        .filter(px => px > x + 2)
+        .sort((a, b) => a - b);
+      const nextX = siblingXs.length ? siblingXs[0] : W;
       const maxLblW = Math.max(20, nextX - x - r - 8);
 
       const lbl = ellipsis(ctx, evt.title, maxLblW);
@@ -3354,10 +3356,12 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap, showLabels = 
 
     if (showLabels || isHov || isSel) {
       ctx.font = (isHov || isSel ? 'bold 11px' : '11px') + ' "Source Sans 3", sans-serif';
-      const nextX = state.hitBoxes
-        .filter(hb => hb.tl && hb.tl.id === tl.id && hb.evt && hb.evt.type === 'point'
-                   && hb.x1 > x + r + 4)
-        .reduce((min, hb) => Math.min(min, hb.x1), W);
+      const siblingXs = tl.events
+        .filter(e => !e._auto && e.type === 'point')
+        .map(e => dayToX(evtStartDays(e)))
+        .filter(px => px > x + 2)
+        .sort((a, b) => a - b);
+      const nextX = siblingXs.length ? siblingXs[0] : W;
       const maxLblW = Math.max(20, nextX - x - r - 6);
       const lbl = ellipsis(ctx, evt.title, maxLblW);
       if (lbl) {
@@ -6569,7 +6573,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.17</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.18</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
