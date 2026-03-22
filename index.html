@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.11</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.12</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2733,13 +2733,12 @@ function drawRow(tl, rowTop) {
   // ── Piste points (séparée, toujours présente si la rubrique a des points) ──
   if (ptH > 0) {
     const ptOpacity = getLodOpacity('__pt_' + tl.id, pointTargetOpacity);
-    const hasHiddenPts = tl.events.some(e =>
-      !e._auto && e.type === 'point' && pointTargetOpacity < 0.1
-    );
+    const hasVisiblePts  = ptOpacity > 0.01;
+    const hasHiddenPts   = tl.events.some(e => !e._auto && e.type === 'point') && pointTargetOpacity < 0.1;
 
-    // Fond et axe : visible si points affichables OU si triangles à montrer
-    if (ptOpacity > 0.01 || hasHiddenPts) {
-      const bgAlpha = Math.max(ptOpacity, hasHiddenPts ? 0.3 : 0);
+    // Fond et axe : toujours visible si la piste existe (points visibles ou triangles)
+    {
+      const bgAlpha = Math.max(ptOpacity, hasHiddenPts ? 0.25 : 0.08);
       ctx.globalAlpha = bgAlpha;
       ctx.fillStyle = hexToRgba(tl.color, 0.06);
       ctx.fillRect(0, ptTop, W, PT_TRACK);
@@ -2851,12 +2850,10 @@ function drawRow(tl, rowTop) {
     // Piste points sous-rubrique
     if (subPtH > 0) {
       const subPtOp = getLodOpacity('__pt_' + sub.id, subPointOpacity);
-      const subHasHiddenPts = sub.events.some(e =>
-        !e._auto && e.type === 'point' && subPointOpacity < 0.1
-      );
+      const subHasHiddenPts = sub.events.some(e => !e._auto && e.type === 'point') && subPointOpacity < 0.1;
 
-      if (subPtOp > 0.01 || subHasHiddenPts) {
-        const bgAlpha = Math.max(subPtOp, subHasHiddenPts ? 0.3 : 0);
+      {
+        const bgAlpha = Math.max(subPtOp, subHasHiddenPts ? 0.25 : 0.08);
         ctx.globalAlpha = bgAlpha;
         ctx.fillStyle = hexToRgba(sub.color, 0.06);
         ctx.fillRect(0, subPtTop, W, PT_TRACK);
@@ -6549,7 +6546,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.11</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.12</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
