@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.6</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.7</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2085,21 +2085,43 @@ function computeTracks(events) {
   const altMap        = new Map(); // evtId → 0 ou 1 (alternance par track)
   const trackAltCount = [];        // nombre de ranges placés par track
 
-  ranges.forEach(evt => {
+  // Séparer ranges racines et ranges enfants (dep renseigné → sous un autre range)
+  const rangeRefMap = new Map(ranges.filter(e => e.ref).map(e => [e.ref, e]));
+  const children = new Set(ranges.filter(e => {
+    if (!e.dep) return false;
+    return rangeRefMap.has(e.dep); // dep pointe vers un autre range de la même tl
+  }).map(e => e.id));
+
+  function placeRange(evt, minTrack = 0) {
     const s = evtStartDays(evt);
     const e = evtEndDays(evt);
-    let t = trackEnds.findIndex(end => end <= s);
-    if (t === -1) {
-      t = trackEnds.length;
-      trackEnds.push(e);
-      trackAltCount.push(0);
-    } else {
-      trackEnds[t] = e;
+    // Chercher un track libre à partir de minTrack
+    let t = -1;
+    for (let i = minTrack; i < trackEnds.length; i++) {
+      if (trackEnds[i] <= s) { t = i; break; }
     }
+    if (t === -1) {
+      t = Math.max(trackEnds.length, minTrack);
+      while (trackEnds.length <= t) { trackEnds.push(-Infinity); trackAltCount.push(0); }
+    }
+    trackEnds[t] = e;
     altMap.set(evt.id, trackAltCount[t] % 2);
     trackAltCount[t]++;
     trackMap.set(evt.id, t);
+    return t;
+  }
+
+  // 1. Placer d'abord les ranges racines (pas d'enfant dep vers un range)
+  ranges.filter(e => !children.has(e.id)).forEach(evt => placeRange(evt, 0));
+
+  // 2. Placer les ranges enfants juste après (sous) leur parent
+  ranges.filter(e => children.has(e.id)).forEach(evt => {
+    const parentRef = evt.dep;
+    const parentEvt = rangeRefMap.get(parentRef);
+    const parentTrack = parentEvt ? (trackMap.get(parentEvt.id) ?? 0) : 0;
+    placeRange(evt, parentTrack + 1); // forcer track > parent
   });
+
   return { trackMap, trackCount: trackEnds.length, altMap };
 }
 
@@ -2672,38 +2694,37 @@ function drawRow(tl, rowTop) {
     // Triangle géré en seconde passe (voir ci-dessous)
   });
 
-  // Seconde passe : triangles des enfants cachés dont le parent est visible ici
+  // Seconde passe : triangles des ranges cachés (règle 3)
+  // → triangle à la médiane X du range caché, à la base du track de son range référent
   tl.events.forEach(evt => {
     if (evt._auto || evt.type !== 'range') return;
     if (lodRangeOpacity(evt) >= 0.1) return; // visible → pas de triangle
-    if (!evt.dep) return; // pas de parent déclaré → pas de triangle
+    if (!evt.dep) return; // pas de référent déclaré → pas de triangle
 
-    // Trouver le parent
     const parentEntry = refMap.get(evt.dep);
     if (!parentEntry) return;
     const parentEvt = parentEntry.evt;
-    if (!parentEvt) return; // parent est une rubrique → triangle non applicable ici
+    if (!parentEvt) return; // référent est une rubrique → pas applicable
 
-    // Le parent doit être visible
+    // Le référent doit être visible
     const parentOp = lodRangeOpacity(parentEvt);
     if (parentOp < 0.1) return;
+    if (!tl.events.includes(parentEvt)) return;
 
-    // Le parent doit appartenir à cette timeline (ou une timeline active)
-    const parentInThisTl = tl.events.includes(parentEvt);
-    const parentVisible = parentInThisTl || getLodOpacity(parentEvt.id, parentOp) > 0.01;
-    if (!parentVisible) return;
-
-    // Position X = centre temporel de l'enfant caché
     const evtX1 = dayToX(evtStartDays(evt));
     const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
     if (evtX2 < 0 || evtX1 > W) return; // hors écran
 
-    // Position Y = base du track du parent
-    const parentTrack  = (trackMap && trackMap.get(parentEvt.id)) || 0;
-    const parentTrackCy = rowTop + TRACK_SLOT * parentTrack + ROW_H / 2 + parentTrack * (2 + TRACK_GAP);
-    const triY = parentTrackCy + (ROW_H - 8) / 2 + 4;
+    // Y = base du track du référent
+    const parentTrack = (trackMap && trackMap.get(parentEvt.id)) || 0;
+    const parentTrackTop = rowTop + parentTrack * (ROW_H / Math.max(1, (trackMap ? [...trackMap.values()].reduce((a,b) => Math.max(a,b), 0) + 1 : 1)));
+    // Calcul précis : base du track parent
+    const trackCy = rowTop + parentTrack * TRACK_SLOT + ROW_H / 2;
+    const triY = trackCy + ROW_H / 2 - 4;
     const triX = Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4));
+    ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
     drawHiddenTriangle(triX, triY, evt.color || tl.color);
+    ctx.globalAlpha = 1;
   });
 
   // ── Piste points (séparée, toujours présente si la rubrique a des points) ──
@@ -2736,16 +2757,27 @@ function drawRow(tl, rowTop) {
         drawEvent(evt, tl, ptCy, ptTop, PT_TRACK, trackMap, altMap, showPointLabels);
         ctx.globalAlpha = 1;
       } else {
-        // Point caché → triangle seulement si dep renseigné ET parent visible
-        if (pointTargetOpacity >= 0.1) return;
+        // Règle 2 : point caché → triangle à la base du range référent (dep)
         if (!evt.dep) return;
         const parentEntry = refMap.get(evt.dep);
-        if (!parentEntry) return;
-        // Le parent peut être un événement ou une rubrique
-        if (parentEntry.evt && lodRangeOpacity(parentEntry.evt) < 0.1) return;
+        if (!parentEntry || !parentEntry.evt) return;
+        const parentEvt = parentEntry.evt;
+        if (!tl.events.includes(parentEvt)) return;
+        const parentOp = lodRangeOpacity(parentEvt);
+        if (parentOp < 0.1) return;
+
+        // X = date du point
         const triX = dayToX(tupleToDays(evt.date));
         if (triX < -20 || triX > W + 20) return;
-        drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), ptCy, evt.color || tl.color);
+
+        // Y = base du track du range référent
+        const parentTrack = (trackMap && trackMap.get(parentEvt.id)) || 0;
+        const trackCy = rowTop + parentTrack * TRACK_SLOT + ROW_H / 2;
+        const triY = trackCy + ROW_H / 2 - 4;
+
+        ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
+        drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), triY, evt.color || tl.color);
+        ctx.globalAlpha = 1;
       }
     });
   }
@@ -2791,21 +2823,26 @@ function drawRow(tl, rowTop) {
       }
     });
 
-    // Triangles des ranges enfants cachés (seconde passe)
+    // Triangles des ranges enfants cachés (règle 3 - sous-rubriques)
     sub.events.forEach(evt => {
       if (evt._auto || evt.type !== 'range') return;
       if (lodRangeOpacity(evt) >= 0.1) return;
       if (!evt.dep) return;
       const parentEntry = refMap.get(evt.dep);
-      if (!parentEntry) return;
-      if (parentEntry.evt && lodRangeOpacity(parentEntry.evt) < 0.1) return;
+      if (!parentEntry || !parentEntry.evt) return;
+      const parentEvt = parentEntry.evt;
+      if (!sub.events.includes(parentEvt)) return;
+      const parentOp = lodRangeOpacity(parentEvt);
+      if (parentOp < 0.1) return;
       const evtX1 = dayToX(evtStartDays(evt));
       const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
       if (evtX2 < 0 || evtX1 > W) return;
-      const track   = (subTrackMap && subTrackMap.get(evt.id)) || 0;
-      const trackCy = subTop + SUB_TRACK / 2 + track * (SUB_SLOT + SUB_GAP);
-      const triY    = trackCy + (SUB_TRACK - 8) / 2 + 4;
+      const parentTrack = (subTrackMap && subTrackMap.get(parentEvt.id)) || 0;
+      const trackCy = subTop + parentTrack * SUB_SLOT + SUB_TRACK / 2;
+      const triY    = trackCy + SUB_TRACK / 2 - 4;
+      ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
       drawHiddenTriangle(Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4)), triY, evt.color || sub.color);
+      ctx.globalAlpha = 1;
     });
 
     // Piste points sous-rubrique
@@ -2835,14 +2872,22 @@ function drawRow(tl, rowTop) {
           drawSubEvent(evt, sub, subPtCy, subPtTop, PT_TRACK, subTrackMap, subAltMap, showSubPointLabels);
           ctx.globalAlpha = 1;
         } else {
-          if (subPointOpacity >= 0.1) return;
+          // Règle 2 : point caché → triangle à la base du range référent
           if (!evt.dep) return;
           const parentEntry = refMap.get(evt.dep);
-          if (!parentEntry) return;
-          if (parentEntry.evt && lodRangeOpacity(parentEntry.evt) < 0.1) return;
+          if (!parentEntry || !parentEntry.evt) return;
+          const parentEvt = parentEntry.evt;
+          if (!sub.events.includes(parentEvt)) return;
+          const parentOp = lodRangeOpacity(parentEvt);
+          if (parentOp < 0.1) return;
           const triX = dayToX(tupleToDays(evt.date));
           if (triX < -20 || triX > W + 20) return;
-          drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), subPtCy, evt.color || sub.color);
+          const parentTrack = (subTrackMap && subTrackMap.get(parentEvt.id)) || 0;
+          const trackCy = subTop + parentTrack * SUB_SLOT + SUB_TRACK / 2;
+          const triY    = trackCy + SUB_TRACK / 2 - 4;
+          ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
+          drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), triY, evt.color || sub.color);
+          ctx.globalAlpha = 1;
         }
       });
     }
@@ -6492,7 +6537,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.6</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.7</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
