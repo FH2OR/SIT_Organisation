@@ -329,7 +329,7 @@
   #fa-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .tl-item {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
     padding: 7px 10px;
     cursor: pointer;
     border-bottom: 1px solid rgba(255,255,255,0.04);
@@ -352,6 +352,19 @@
     padding: 1px 6px; border-radius: 10px;
     border: 1px solid var(--border);
   }
+  .tl-ref-row {
+    display: flex; align-items: center; gap: 4px;
+    width: 100%; padding: 2px 4px 3px 28px; flex-basis: 100%;
+  }
+  .tl-ref-label { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+  .tl-ref-input {
+    font-size: 10px; color: var(--text-mid);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 3px; padding: 1px 5px;
+    flex: 1; outline: none; font-family: monospace;
+  }
+  .tl-ref-input:focus { border-color: var(--accent); color: var(--text); }
 
   /* ── Boutons d'action communs aux items FA ─────────────────── */
   .tl-zoom-btn,
@@ -1301,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.2</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.5</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -1627,6 +1640,11 @@
           </div>
           <div class="fc-label">Commentaire</div>
           <textarea id="edit-comment"></textarea>
+          <div class="fc-label">Ref <span style="color:var(--text-dim);font-size:10px">(identifiant unique)</span></div>
+          <input type="text" id="edit-ref" placeholder="ex: EGYPT1" style="font-family:monospace;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+          <div class="fc-label">Dep <span style="color:var(--text-dim);font-size:10px">(ref du parent)</span></div>
+          <input type="text" id="edit-dep" placeholder="ref du parent…" style="font-family:monospace" list="edit-dep-dl">
+          <datalist id="edit-dep-dl"></datalist>
           <div class="fc-edit-row">
             <button class="btn-save"   onclick="saveEdit()">💾 Sauvegarder</button>
             <button class="btn-cancel" onclick="toggleEdit()">✗ Annuler</button>
@@ -2639,28 +2657,52 @@ function drawRow(tl, rowTop) {
   const showPointLabels = pointMinGap >= LOD_POINT_MIN_PX * 2;
   const today = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
 
-  // ── Ranges : dessiner ou triangle ───────────────────────────
+  // ── Ranges : dessiner ou triangle via dep/ref ────────────────
   tl.events.forEach(evt => {
     if (evt._auto || evt.type !== 'range') return;
     const targetOpacity = lodRangeOpacity(evt);
     const opacity = getLodOpacity(evt.id, targetOpacity);
 
     if (opacity > 0.01) {
+      // Visible → dessiner normalement
       ctx.globalAlpha = opacity;
       drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap, altMap, showPointLabels);
       ctx.globalAlpha = 1;
-    } else {
-      if (lodRangeOpacity(evt) >= 0.1) return;
-      if (!canBecomeVisible(evt, tl.events)) return;
-      const evtX1 = dayToX(evtStartDays(evt));
-      const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
-      if (evtX2 < 0 || evtX1 > W) return;
-      const track   = (trackMap && trackMap.get(evt.id)) || 0;
-      const trackCy = rowTop + TRACK_SLOT * track + ROW_H / 2 + track * (2 + TRACK_GAP);
-      const triY    = trackCy + (ROW_H - 8) / 2 + 4;
-      const triX    = Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4));
-      drawHiddenTriangle(triX, triY, evt.color || tl.color);
     }
+    // Triangle géré en seconde passe (voir ci-dessous)
+  });
+
+  // Seconde passe : triangles des enfants cachés dont le parent est visible ici
+  tl.events.forEach(evt => {
+    if (evt._auto || evt.type !== 'range') return;
+    if (lodRangeOpacity(evt) >= 0.1) return; // visible → pas de triangle
+    if (!evt.dep) return; // pas de parent déclaré → pas de triangle
+
+    // Trouver le parent
+    const parentEntry = refMap.get(evt.dep);
+    if (!parentEntry) return;
+    const parentEvt = parentEntry.evt;
+
+    // Le parent doit être visible
+    const parentOp = lodRangeOpacity(parentEvt);
+    if (parentOp < 0.1) return; // parent caché → pas de triangle
+
+    // Le parent doit appartenir à cette timeline (ou une timeline active)
+    const parentInThisTl = tl.events.includes(parentEvt);
+    const parentVisible = parentInThisTl || getLodOpacity(parentEvt.id, parentOp) > 0.01;
+    if (!parentVisible) return;
+
+    // Position X = centre temporel de l'enfant caché
+    const evtX1 = dayToX(evtStartDays(evt));
+    const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
+    if (evtX2 < 0 || evtX1 > W) return; // hors écran
+
+    // Position Y = base du track du parent
+    const parentTrack  = (trackMap && trackMap.get(parentEvt.id)) || 0;
+    const parentTrackCy = rowTop + TRACK_SLOT * parentTrack + ROW_H / 2 + parentTrack * (2 + TRACK_GAP);
+    const triY = parentTrackCy + (ROW_H - 8) / 2 + 4;
+    const triX = Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4));
+    drawHiddenTriangle(triX, triY, evt.color || tl.color);
   });
 
   // ── Piste points (séparée, toujours présente si la rubrique a des points) ──
@@ -2693,8 +2735,12 @@ function drawRow(tl, rowTop) {
         drawEvent(evt, tl, ptCy, ptTop, PT_TRACK, trackMap, altMap, showPointLabels);
         ctx.globalAlpha = 1;
       } else {
-        // Point caché → triangle dans la piste points
+        // Point caché → triangle seulement si dep renseigné ET parent visible
         if (pointTargetOpacity >= 0.1) return;
+        if (!evt.dep) return;
+        const parentEntry = refMap.get(evt.dep);
+        if (!parentEntry) return;
+        if (lodRangeOpacity(parentEntry.evt) < 0.1) return;
         const triX = dayToX(tupleToDays(evt.date));
         if (triX < -20 || triX > W + 20) return;
         drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), ptCy, evt.color || tl.color);
@@ -2731,7 +2777,7 @@ function drawRow(tl, rowTop) {
     const { opacity: subPointOpacity, minGap: subPointMinGap } = lodPointsOpacity(sub.events);
     const showSubPointLabels = subPointMinGap >= LOD_POINT_MIN_PX * 2;
 
-    // Ranges
+    // Ranges sous-rubrique
     sub.events.forEach(evt => {
       if (evt._auto || evt.type !== 'range') return;
       const targetOpacity = lodRangeOpacity(evt);
@@ -2740,18 +2786,24 @@ function drawRow(tl, rowTop) {
         ctx.globalAlpha = opacity;
         drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap, subAltMap, showSubPointLabels);
         ctx.globalAlpha = 1;
-      } else {
-        if (lodRangeOpacity(evt) >= 0.1) return;
-        if (!canBecomeVisible(evt, sub.events)) return;
-        const evtX1 = dayToX(evtStartDays(evt));
-        const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
-        if (evtX2 < 0 || evtX1 > W) return;
-        const track   = (subTrackMap && subTrackMap.get(evt.id)) || 0;
-        const trackCy = subTop + SUB_TRACK / 2 + track * (SUB_SLOT + SUB_GAP);
-        const triY    = trackCy + (SUB_TRACK - 8) / 2 + 4;
-        const triX    = Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4));
-        drawHiddenTriangle(triX, triY, evt.color || sub.color);
       }
+    });
+
+    // Triangles des ranges enfants cachés (seconde passe)
+    sub.events.forEach(evt => {
+      if (evt._auto || evt.type !== 'range') return;
+      if (lodRangeOpacity(evt) >= 0.1) return;
+      if (!evt.dep) return;
+      const parentEntry = refMap.get(evt.dep);
+      if (!parentEntry) return;
+      if (lodRangeOpacity(parentEntry.evt) < 0.1) return;
+      const evtX1 = dayToX(evtStartDays(evt));
+      const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
+      if (evtX2 < 0 || evtX1 > W) return;
+      const track   = (subTrackMap && subTrackMap.get(evt.id)) || 0;
+      const trackCy = subTop + SUB_TRACK / 2 + track * (SUB_SLOT + SUB_GAP);
+      const triY    = trackCy + (SUB_TRACK - 8) / 2 + 4;
+      drawHiddenTriangle(Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4)), triY, evt.color || sub.color);
     });
 
     // Piste points sous-rubrique
@@ -2782,6 +2834,10 @@ function drawRow(tl, rowTop) {
           ctx.globalAlpha = 1;
         } else {
           if (subPointOpacity >= 0.1) return;
+          if (!evt.dep) return;
+          const parentEntry = refMap.get(evt.dep);
+          if (!parentEntry) return;
+          if (lodRangeOpacity(parentEntry.evt) < 0.1) return;
           const triX = dayToX(tupleToDays(evt.date));
           if (triX < -20 || triX > W + 20) return;
           drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), subPtCy, evt.color || sub.color);
@@ -3083,6 +3139,22 @@ function hiddenNearbyX(visibleEvt, allEvents, today) {
 
 // Vérifie si un événement peut physiquement devenir visible en zoomant au max
 // Seuls les ranges de durée nulle (dates identiques) sont exclus
+// ── Carte ref → evt pour résolution des dépendances ──────────
+// Reconstruit après chaque chargement du catalogue
+let refMap = new Map(); // ref (string) → { evt, tl }
+
+function buildRefMap() {
+  refMap.clear();
+  // Événements
+  state.timelines.forEach(tl => {
+    tl.events.forEach(evt => {
+      if (evt.ref) refMap.set(evt.ref, { evt, tl });
+    });
+    // Rubriques elles-mêmes (ref → { tl })
+    if (tl.ref) refMap.set(tl.ref, { tl, evt: null });
+  });
+}
+
 function canBecomeVisible(evt, allEvents) {
   if (evt.type !== 'range') return true; // les points sont toujours inclus
   if (!evt.end) return true; // sans fin → toujours visible
@@ -3838,14 +3910,41 @@ function buildFA() {
       <div class="tl-drag-handle" title="Déplacer"><span></span><span></span><span></span></div>
       <div class="tl-checkbox${tl.enabled?' checked':''}" style="border-color:${tl.color};background:${tl.enabled?tl.color:'transparent'}"></div>
       <div class="tl-label" style="color:${tl.color}">${tl.title}</div>
+      <div class="tl-ref-row">
+        <span class="tl-ref-label">ref :</span>
+        <input type="text" class="tl-ref-input" value="${tl.ref || ''}" placeholder="identifiant…" maxlength="40">
+      </div>
       <div class="tl-count">${totalEvts}</div>
       <button class="tl-add-sub-btn" title="Ajouter une sous-rubrique">＋</button>
       <button class="tl-zoom-btn" title="Zoomer sur cette rubrique">⌖</button>
       <button class="tl-del-btn" title="Supprimer cette rubrique et ses événements">🗑</button>
     `;
     el.addEventListener('click', e => {
-      if (e.target.closest('button') || e.target.closest('.tl-drag-handle')) return;
+      if (e.target.closest('button') || e.target.closest('.tl-drag-handle') || e.target.closest('.tl-ref-input')) return;
       toggleTimeline(tl.id);
+    });
+
+    // Champ ref — sauvegarde locale + Supabase au blur
+    const refInput = el.querySelector('.tl-ref-input');
+    refInput.addEventListener('click', e => e.stopPropagation());
+    refInput.addEventListener('blur', async () => {
+      const newRef = refInput.value.trim() || null;
+      if (newRef === (tl.ref || null)) return; // pas de changement
+      tl.ref = newRef;
+      buildRefMap();
+      // Sauvegarder dans Supabase si la rubrique vient de là (id non temporaire)
+      if (!tl.id.startsWith('sub_') && !tl.id.startsWith('r_tmp')) {
+        try {
+          await sbFetch(
+            sbUrl('rubriques', `?id=eq.${encodeURIComponent(tl.id)}`),
+            { method: 'PATCH', body: JSON.stringify({ ref: newRef }) }
+          );
+        } catch(e) { console.warn('[ref save]', e); }
+      }
+    });
+    refInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') refInput.blur();
+      if (e.key === 'Escape') { refInput.value = tl.ref || ''; refInput.blur(); }
     });
     el.querySelector('.tl-zoom-btn').addEventListener('click', e => {
       e.stopPropagation(); zoomToTimeline(tl.id);
@@ -4204,6 +4303,7 @@ function addFromCatalogue(id, ensureParentId) {
         id:      ancestor.id,
         title:   ancestor.title,
         color:   ancestor.color,
+        ref:     ancestor.ref || null,
         enabled: true,
         events:  ancestor._events ? [...ancestor._events] : []
       };
@@ -4223,6 +4323,7 @@ function addFromCatalogue(id, ensureParentId) {
       id:      cat.id,
       title:   cat.title,
       color:   cat.color,
+      ref:     cat.ref || null,
       enabled: true,
       events:  cat._events ? [...cat._events] : []
     };
@@ -4261,6 +4362,7 @@ function addFromCatalogue(id, ensureParentId) {
   buildCatalogueList(document.getElementById('cat-search').value);
   // Vider le cache LOD pour les nouveaux événements
   Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
+  buildRefMap();
   render();
 
   const addedTl = state.timelines.find(t => t.id === id);
@@ -4447,6 +4549,20 @@ function showFCDetail(evt, tl) {
   if (evt.zone) { zoneText.textContent = evt.zone; zoneRow.style.display = 'flex'; }
   else { zoneRow.style.display = 'none'; }
 
+  // ── Ref / Dep ─────────────────────────────────────────────
+  let refDepEl = document.getElementById('fc-ref-dep');
+  if (!refDepEl) {
+    refDepEl = document.createElement('div');
+    refDepEl.id = 'fc-ref-dep';
+    refDepEl.style.cssText = 'font-size:10px;font-family:monospace;color:var(--text-dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap';
+    zoneRow.insertAdjacentElement('afterend', refDepEl);
+  }
+  const parts = [];
+  if (evt.ref) parts.push(`<span style="color:var(--accent)">ref: ${evt.ref}</span>`);
+  if (evt.dep) parts.push(`<span style="color:var(--accent2)">dep: ${evt.dep}</span>`);
+  refDepEl.innerHTML = parts.join('');
+  refDepEl.style.display = parts.length ? 'flex' : 'none';
+
   // ── Photo ────────────────────────────────────────────────
   const wrap = document.getElementById('fc-photo-wrap');
   const img  = document.getElementById('fc-photo-img');
@@ -4497,6 +4613,18 @@ function toggleEdit() {
   if (editOpen && fcEvt) {
     document.getElementById('edit-title').value   = fcEvt.title;
     document.getElementById('edit-comment').value = fcEvt.comment || '';
+
+    // ── Ref / Dep ─────────────────────────────────────────────
+    document.getElementById('edit-ref').value = fcEvt.ref || '';
+    document.getElementById('edit-dep').value = fcEvt.dep || '';
+    // Remplir la datalist avec les refs disponibles
+    const dl = document.getElementById('edit-dep-dl');
+    const allRefs = [];
+    state.timelines.forEach(tl => {
+      if (tl.ref) allRefs.push(tl.ref);
+      tl.events.forEach(e => { if (e.ref) allRefs.push(e.ref); });
+    });
+    dl.innerHTML = [...new Set(allRefs)].map(r => `<option value="${r}">`).join('');
 
     // ── Photo URL + prévisualisation ─────────────────────────
     const photoInput = document.getElementById('edit-photo');
@@ -4555,6 +4683,11 @@ function saveEdit() {
   if (newTitle) fcEvt.title = newTitle;
   fcEvt.comment = document.getElementById('edit-comment').value.trim();
 
+  // ── Ref / Dep ─────────────────────────────────────────────
+  fcEvt.ref = document.getElementById('edit-ref').value.trim().toUpperCase() || null;
+  fcEvt.dep = document.getElementById('edit-dep').value.trim() || null;
+  buildRefMap();
+
   // ── Photo ────────────────────────────────────────────────
   const photoUrl = document.getElementById('edit-photo').value.trim();
   fcEvt.photo = photoUrl || null;
@@ -4592,6 +4725,15 @@ function saveEdit() {
 
   // Recalculer le range englobant si sous-rubrique
   if (fcTl && fcTl.parentId) syncParentRange(fcTl.parentId);
+
+  // Sauvegarder ref/dep dans Supabase si l'événement vient de la base
+  if (fcEvt.id && String(fcEvt.id).startsWith('sb_')) {
+    const evtId = String(fcEvt.id).replace('sb_', '');
+    sbFetch(sbUrl('evenements', `?id=eq.${evtId}`), {
+      method: 'PATCH',
+      body: JSON.stringify({ ref: fcEvt.ref || null, dep: fcEvt.dep || null })
+    }).catch(err => console.warn('[saveEdit ref/dep]', err));
+  }
 
   toggleEdit();
   showFCDetail(fcEvt, fcTl);
@@ -5027,6 +5169,7 @@ async function dbPullCatalogue() {
       parentId:    r.parent_id || undefined,
       defaultType: r.type_defaut || 'point',
       acces:       r.acces || 'public',
+      ref:         r.ref  || null,
       _events:     []
     }));
 
@@ -5052,6 +5195,8 @@ async function dbPullCatalogue() {
           comment:    e.commentaire || '',
           photo:      e.photo || null,
           zone:       e.zone || null,
+          ref:        e.ref  || null,
+          dep:        e.dep  || null,
           importance: e.importance != null ? e.importance : 5
         });
       } else {
@@ -5066,6 +5211,8 @@ async function dbPullCatalogue() {
           comment:    e.commentaire || '',
           photo:      e.photo || null,
           zone:       e.zone || null,
+          ref:        e.ref  || null,
+          dep:        e.dep  || null,
           importance: e.importance != null ? e.importance : 5
         });
       }
@@ -5079,6 +5226,7 @@ async function dbPullCatalogue() {
     clearFCDetail();
     buildCatalogueList('');
     buildFA();
+    buildRefMap();
     render();
 
     const nbEvts = (evts || []).length;
@@ -6342,7 +6490,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.2</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.5</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
