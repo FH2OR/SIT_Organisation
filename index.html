@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.8</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.9</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2074,20 +2074,8 @@ function setSelectedSymbol(sym) {
     b.classList.toggle('selected', b.dataset.symbol === (sym || 'circle'));
   });
 }
-// ── Cache computeTracks ── invalidé par clearTrackCache() ──
-const _trackCache = new Map(); // tlId → {trackMap, trackCount, altMap, eventsLen}
-
-function clearTrackCache() { _trackCache.clear(); }
-
-function computeTracksFor(tl) {
-  const key   = tl.id;
-  const evLen = tl.events.length;
-  const cached = _trackCache.get(key);
-  if (cached && cached.eventsLen === evLen) return cached;
-  const result = computeTracks(tl.events);
-  _trackCache.set(key, { ...result, eventsLen: evLen });
-  return result;
-}
+// Retourne un Map<evtId, trackIndex> pour les ranges d'une timeline
+function computeTracksFor(tl) { return computeTracks(tl.events); }
 
 // Retourne un Map<evtId, trackIndex> pour les ranges d'une timeline
 function computeTracks(events) {
@@ -2142,21 +2130,7 @@ function computeTracks(events) {
 
 // Compte le nombre de tracks supplémentaires nécessaires pour les events cachés
 // qui chevauchent des events visibles permanents
-const _extraCache = new Map();
-function clearExtraCache() { _extraCache.clear(); }
-
-function extraTracksForHidden(events, cacheKey) {
-  if (cacheKey) {
-    const k = cacheKey + '|' + Math.round(state.scale * 1000);
-    if (_extraCache.has(k)) return _extraCache.get(k);
-    const v = _extraTracksForHidden(events);
-    _extraCache.set(k, v);
-    return v;
-  }
-  return _extraTracksForHidden(events);
-}
-
-function _extraTracksForHidden(events) {
+function extraTracksForHidden(events) {
   const ranges = events.filter(e => e.type === 'range' && !e._auto);
   const permanent = ranges.filter(e => {
     if (!e.start) return false;
@@ -2190,12 +2164,12 @@ function hasPoints(events) {
 function rowHeight(tl) {
   const activeSubs = state.timelines.filter(s => s.parentId === tl.id && s.enabled);
   const { trackCount } = computeTracksFor(tl);
-  const extra = extraTracksForHidden(tl.events, tl.id);
+  const extra = extraTracksForHidden(tl.events);
   const mainH = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
   const ptH   = hasPoints(tl.events) ? PT_TRACK : 0;
   return mainH + ptH + activeSubs.reduce((sum, sub) => {
     const { trackCount: tc } = computeTracksFor(sub);
-    const subExtra = extraTracksForHidden(sub.events, sub.id);
+    const subExtra = extraTracksForHidden(sub.events);
     const subPtH = hasPoints(sub.events) ? PT_TRACK : 0;
     return sum + SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT + subPtH;
   }, 0);
@@ -2204,7 +2178,7 @@ function rowHeight(tl) {
 function rowLayout(tl, rowTop) {
   const activeSubs = state.timelines.filter(s => s.parentId === tl.id && s.enabled);
   const { trackCount } = computeTracksFor(tl);
-  const extra = extraTracksForHidden(tl.events, tl.id);
+  const extra = extraTracksForHidden(tl.events);
   const mainH  = ROW_H + Math.max(0, trackCount + extra - 1) * TRACK_SLOT;
   const ptH    = hasPoints(tl.events) ? PT_TRACK : 0;
   const mainCy = rowTop + mainH / 2;
@@ -2214,7 +2188,7 @@ function rowLayout(tl, rowTop) {
   let subOffset = mainH + ptH;
   const subs = activeSubs.map(sub => {
     const { trackCount: tc } = computeTracksFor(sub);
-    const subExtra = extraTracksForHidden(sub.events, sub.id);
+    const subExtra = extraTracksForHidden(sub.events);
     const subH   = SUB_TRACK + Math.max(0, tc + subExtra - 1) * SUB_SLOT;
     const subPtH = hasPoints(sub.events) ? PT_TRACK : 0;
     const cy     = rowTop + subOffset + subH / 2;
@@ -3220,8 +3194,6 @@ function hiddenNearbyX(visibleEvt, allEvents, today) {
 let refMap = new Map(); // ref (string) → { evt, tl }
 
 function buildRefMap() {
-  clearTrackCache();
-  clearExtraCache();
   refMap.clear();
   // Événements
   state.timelines.forEach(tl => {
@@ -3379,7 +3351,6 @@ canvas.addEventListener('wheel', e => {
   const newScale = Math.max(0.00005, Math.min(state.scale * factor, 500));
   state.centerDay = mDay - (mx - W/2) / newScale;
   state.scale = newScale;
-  clearExtraCache();
   // Repasser en mode auto LOD géométrique au zoom molette
   render();
 }, { passive: false });
@@ -6423,26 +6394,25 @@ function lodPointsOpacity(events) {
 }
 
 // Obtenir l'opacité lissée (avec animation) pour un événement
+let _rafPending = false;
+function scheduleRender() {
+  if (_rafPending) return;
+  _rafPending = true;
+  requestAnimationFrame(() => { _rafPending = false; render(); });
+}
+
 function getLodOpacity(id, targetOpacity) {
   if (!(id in lodOpacity)) {
-    // Événements permanents (cible = 1 immédiatement au chargement) → partir de 1
-    // Événements conditionnels (cible = 0) → partir de 0, pas d'animation nécessaire
-    // Événements conditionnels qui deviennent visibles → partir de 0 puis animer
     lodOpacity[id] = targetOpacity === 1 ? 1 : 0;
-    if (targetOpacity > 0 && targetOpacity < 1) {
-      // Valeur intermédiaire : animer
-      requestAnimationFrame(() => render());
-    }
   }
   const current = lodOpacity[id];
   if (Math.abs(current - targetOpacity) < 0.02) {
     lodOpacity[id] = targetOpacity;
     return targetOpacity;
   }
-  // Interpolation douce
-  const step = (targetOpacity - current) * 0.15;
-  lodOpacity[id] = current + step;
-  requestAnimationFrame(() => render());
+  // Interpolation douce → un seul RAF global
+  lodOpacity[id] = current + (targetOpacity - current) * 0.15;
+  scheduleRender();
   return lodOpacity[id];
 }
 
@@ -6569,7 +6539,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.8</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.9</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
