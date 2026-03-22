@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.18</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.19</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2784,20 +2784,22 @@ function drawRow(tl, rowTop) {
   tl.events.forEach(evt => {
     if (evt._auto || evt.type !== 'range') return;
     if (lodRangeOpacity(evt) >= 0.1) return;
-    if (!evt.dep) return;
-    const parentEntry = refMap.get(evt.dep);
-    if (!parentEntry || !parentEntry.evt) return;
-    const parentEvt = parentEntry.evt;
-    if (!tl.events.includes(parentEvt)) return;
-    const parentOp = lodRangeOpacity(parentEvt);
-    if (parentOp < 0.1) return;
     const evtX1 = dayToX(evtStartDays(evt));
     const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
     if (evtX2 < 0 || evtX1 > W) return;
-    const pt = trackMap.get(parentEvt.id) ?? 0;
-    const pSlot = slots.find(s => s.trackIdx === pt) || slots[0];
+
+    // Trouver le slot cible : range parent si dep, sinon track 0
+    let pSlot = slots[0];
+    if (evt.dep) {
+      const parentEntry = refMap.get(evt.dep);
+      const parentEvt = parentEntry?.evt;
+      if (parentEvt && tl.events.includes(parentEvt) && lodRangeOpacity(parentEvt) >= 0.1) {
+        const pt = trackMap.get(parentEvt.id) ?? 0;
+        pSlot = slots.find(s => s.trackIdx === pt) || slots[0];
+        ctx.globalAlpha = getLodOpacity(parentEvt.id, lodRangeOpacity(parentEvt));
+      }
+    }
     const triY = pSlot ? pSlot.rangeTop + pSlot.rangeH - 6 : rowTop + ROW_H - 6;
-    ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
     drawHiddenTriangle(Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4)), triY, evt.color || tl.color);
     ctx.globalAlpha = 1;
   });
@@ -2875,20 +2877,21 @@ function drawRow(tl, rowTop) {
     sub.events.forEach(evt => {
       if (evt._auto || evt.type !== 'range') return;
       if (lodRangeOpacity(evt) >= 0.1) return;
-      if (!evt.dep) return;
-      const parentEntry = refMap.get(evt.dep);
-      if (!parentEntry || !parentEntry.evt) return;
-      const parentEvt = parentEntry.evt;
-      if (!sub.events.includes(parentEvt)) return;
-      const parentOp = lodRangeOpacity(parentEvt);
-      if (parentOp < 0.1) return;
       const evtX1 = dayToX(evtStartDays(evt));
       const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
       if (evtX2 < 0 || evtX1 > W) return;
-      const pt = subTrackMap.get(parentEvt.id) ?? 0;
-      const pSlot = subSlots.find(s => s.trackIdx === pt) || subSlots[0];
+
+      let pSlot = subSlots[0];
+      if (evt.dep) {
+        const parentEntry = refMap.get(evt.dep);
+        const parentEvt = parentEntry?.evt;
+        if (parentEvt && sub.events.includes(parentEvt) && lodRangeOpacity(parentEvt) >= 0.1) {
+          const pt = subTrackMap.get(parentEvt.id) ?? 0;
+          pSlot = subSlots.find(s => s.trackIdx === pt) || subSlots[0];
+          ctx.globalAlpha = getLodOpacity(parentEvt.id, lodRangeOpacity(parentEvt));
+        }
+      }
       const triY = pSlot ? pSlot.rangeTop + pSlot.rangeH - 6 : subTop + SUB_TRACK - 6;
-      ctx.globalAlpha = getLodOpacity(parentEvt.id, parentOp);
       drawHiddenTriangle(Math.max(4, Math.min((evtX1 + evtX2) / 2, W - 4)), triY, evt.color || sub.color);
       ctx.globalAlpha = 1;
     });
@@ -4292,8 +4295,8 @@ function buildCatalogueList(filter) {
 
   const roots = catalogueData.filter(r => !r.parentId);
 
-  // IDs déjà dans la carte
-  const activeIds = new Set(state.timelines.map(t => t.id));
+  // IDs déjà actifs dans la carte (enabled seulement)
+  const activeIds = new Set(state.timelines.filter(t => t.enabled).map(t => t.id));
 
   let anyVisible = false;
 
@@ -6573,7 +6576,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.18</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.19</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
