@@ -2560,32 +2560,33 @@ function drawTimeHeader(nowDay, nowX) {
     ctx.beginPath(); ctx.moveTo(nowX, 0); ctx.lineTo(nowX, HEADER_H); ctx.stroke();
     ctx.restore();
 
-    // ── Étiquette "Aujourd'hui" en haut du header ─────────────
+    // ── Étiquette "Aujourd'hui" en bas du header ─────────────
     const lbl = 'Aujourd\'hui';
-    ctx.font = `600 16px "Source Sans 3",sans-serif`;
+    ctx.font = `600 13px "Source Sans 3",sans-serif`;
     const tw  = ctx.measureText(lbl).width;
     const pad = 5, bh = 16, bw = tw + pad * 2;
     let bx = nowX + 4;
     if (bx + bw > W - 4) bx = nowX - bw - 4;
     if (bx < 2) bx = 2;
+    const by = HEADER_H - bh - 2;
 
     // Fond blanc semi-transparent
     ctx.fillStyle = 'rgba(255,255,255,0.14)';
-    ctx.beginPath(); ctx.roundRect(bx, 3, bw, bh, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 3); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 0.75;
     ctx.stroke();
     // Texte blanc
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.textAlign = 'left';
-    ctx.fillText(lbl, bx + pad, 3 + bh - 4);
+    ctx.fillText(lbl, bx + pad, by + bh - 4);
 
-    // Flèche vers le bas au bord inférieur du header
+    // Flèche vers le bas dans la frise
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
-    ctx.moveTo(nowX - 5, HEADER_H - 1);
-    ctx.lineTo(nowX + 5, HEADER_H - 1);
-    ctx.lineTo(nowX,     HEADER_H + 6);
+    ctx.moveTo(nowX - 5, HEADER_H);
+    ctx.lineTo(nowX + 5, HEADER_H);
+    ctx.lineTo(nowX,     HEADER_H + 7);
     ctx.closePath();
     ctx.fill();
   }
