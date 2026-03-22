@@ -4571,7 +4571,9 @@ function toggleTimeline(id) {
   }
   // Recalculer le range englobant si c'est une sous-rubrique
   if (tl.parentId) syncParentRange(tl.parentId);
-  buildFA(); render();
+  buildFA();
+  buildCatalogueList(document.getElementById('cat-search').value);
+  render();
 }
 
 function checkAll(val) {
