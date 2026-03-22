@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.0</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.2</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2663,14 +2663,18 @@ function drawRow(tl, rowTop) {
     }
   });
 
-  // ── Piste points (séparée, avec opacité propre) ──────────────
+  // ── Piste points (séparée, toujours présente si la rubrique a des points) ──
   if (ptH > 0) {
     const ptOpacity = getLodOpacity('__pt_' + tl.id, pointTargetOpacity);
+    const hasHiddenPts = tl.events.some(e =>
+      !e._auto && e.type === 'point' && pointTargetOpacity < 0.1
+    );
 
-    if (ptOpacity > 0.01) {
-      // Fond et axe de la piste points
-      ctx.globalAlpha = ptOpacity;
-      ctx.fillStyle = hexToRgba(tl.color, 0.04);
+    // Fond et axe : visible si points affichables OU si triangles à montrer
+    if (ptOpacity > 0.01 || hasHiddenPts) {
+      const bgAlpha = Math.max(ptOpacity, hasHiddenPts ? 0.3 : 0);
+      ctx.globalAlpha = bgAlpha;
+      ctx.fillStyle = hexToRgba(tl.color, 0.06);
       ctx.fillRect(0, ptTop, W, PT_TRACK);
       ctx.strokeStyle = hexToRgba(tl.color, 0.20);
       ctx.setLineDash([3, 7]); ctx.lineWidth = 1;
@@ -2684,15 +2688,16 @@ function drawRow(tl, rowTop) {
       const opacity = getLodOpacity(evt.id, pointTargetOpacity);
 
       if (opacity > 0.01) {
+        // Point visible → dans la piste points
         ctx.globalAlpha = opacity;
         drawEvent(evt, tl, ptCy, ptTop, PT_TRACK, trackMap, altMap, showPointLabels);
         ctx.globalAlpha = 1;
       } else {
+        // Point caché → triangle dans la piste points
         if (pointTargetOpacity >= 0.1) return;
         const triX = dayToX(tupleToDays(evt.date));
         if (triX < -20 || triX > W + 20) return;
-        const triXc = Math.max(4, Math.min(triX, W - 4));
-        drawHiddenTriangle(triXc, ptCy + PT_TRACK / 2 - 2, evt.color || tl.color);
+        drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), ptCy, evt.color || tl.color);
       }
     });
   }
@@ -2752,9 +2757,14 @@ function drawRow(tl, rowTop) {
     // Piste points sous-rubrique
     if (subPtH > 0) {
       const subPtOp = getLodOpacity('__pt_' + sub.id, subPointOpacity);
-      if (subPtOp > 0.01) {
-        ctx.globalAlpha = subPtOp;
-        ctx.fillStyle = hexToRgba(sub.color, 0.04);
+      const subHasHiddenPts = sub.events.some(e =>
+        !e._auto && e.type === 'point' && subPointOpacity < 0.1
+      );
+
+      if (subPtOp > 0.01 || subHasHiddenPts) {
+        const bgAlpha = Math.max(subPtOp, subHasHiddenPts ? 0.3 : 0);
+        ctx.globalAlpha = bgAlpha;
+        ctx.fillStyle = hexToRgba(sub.color, 0.06);
         ctx.fillRect(0, subPtTop, W, PT_TRACK);
         ctx.strokeStyle = hexToRgba(sub.color, 0.20);
         ctx.setLineDash([3, 7]); ctx.lineWidth = 1;
@@ -2762,6 +2772,7 @@ function drawRow(tl, rowTop) {
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
       }
+
       sub.events.forEach(evt => {
         if (evt._auto || evt.type !== 'point') return;
         const opacity = getLodOpacity(evt.id, subPointOpacity);
@@ -3080,7 +3091,7 @@ function canBecomeVisible(evt, allEvents) {
 }
 
 function drawHiddenTriangle(x, y, col) {
-  const size = 7; // demi-base (était 5)
+  const size = 6; // demi-base (réduit de 15%)
   // Contour blanc pour le contraste
   ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   ctx.lineWidth = 1.5;
@@ -6331,7 +6342,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.0</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.2</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
