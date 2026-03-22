@@ -1301,7 +1301,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.4</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.7.5</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2641,14 +2641,16 @@ function drawRow(tl, rowTop) {
     ctx.globalAlpha = opacity;
     drawEvent(evt, tl, mainCy, rowTop, mainH, trackMap, altMap, showPointLabels);
     ctx.globalAlpha = 1;
-  });
 
-  // Triangle ▼ unique par rubrique : position X médiane des cachés à l'écran
-  const hiddenXs = hiddenEventsOnScreen(tl.events, today);
-  if (hiddenXs.length > 0) {
-    const triX = hiddenXs[Math.floor(hiddenXs.length / 2)];
-    drawHiddenTriangle(triX, rowTop + mainH + 4, tl.color);
-  }
+    // Triangle ▼ pointant vers le voisin caché adjacent sur le même track
+    const neighborX = hiddenNeighborX(evt, tl.events, trackMap, today);
+    if (neighborX !== null) {
+      const track    = (trackMap && trackMap.get(evt.id)) || 0;
+      const trackCy  = rowTop + TRACK_SLOT * track + ROW_H / 2 + track * (2 + TRACK_GAP);
+      const evtBottom = trackCy + (ROW_H - 8) / 2;
+      drawHiddenTriangle(neighborX, evtBottom + 4, evt.color || tl.color);
+    }
+  });
 
   // ── Pistes des sous-rubriques ───────────────────────────────
   subs.forEach(({ sub, cy, subH, subTop }) => {
@@ -2690,14 +2692,13 @@ function drawRow(tl, rowTop) {
       ctx.globalAlpha = opacity;
       drawSubEvent(evt, sub, cy, subTop, subH, subTrackMap, subAltMap, showSubPointLabels);
       ctx.globalAlpha = 1;
-    });
 
-    // Triangle ▼ unique par sous-rubrique
-    const subHiddenXs = hiddenEventsOnScreen(sub.events, today);
-    if (subHiddenXs.length > 0) {
-      const triX = subHiddenXs[Math.floor(subHiddenXs.length / 2)];
-      drawHiddenTriangle(triX, subTop + subH - 2, sub.color);
-    }
+      // Triangle ▼ pointant vers le voisin caché adjacent
+      const neighborX = hiddenNeighborX(evt, sub.events, subTrackMap, today);
+      if (neighborX !== null) {
+        drawHiddenTriangle(neighborX, subTop + subH - 2, evt.color || sub.color);
+      }
+    });
   });
 
   // Séparateur bas de ligne
@@ -2919,45 +2920,78 @@ function hasHiddenEventsNearby(events) {
   });
 }
 
-// Retourne la liste des positions X des événements cachés visibles à l'écran
-// (indépendamment de leur chevauchement avec un événement particulier)
-function hiddenEventsOnScreen(allEvents, today) {
-  const visibleDayMin = xToDay(0);
-  const visibleDayMax = xToDay(W);
-  const { opacity: pointOp } = lodPointsOpacity(allEvents);
+// Pour chaque événement visible, retourne la position X du voisin caché
+// le plus proche (adjacent sur le même track), ou null si aucun.
+// "Caché" = lodRangeOpacity < 0.1 pour les ranges, pointOp < 0.5 pour les points.
+function hiddenNeighborX(visibleEvt, allEvents, trackMap, today) {
+  const pointOp = lodPointsOpacity(allEvents).opacity;
 
-  const hiddenXs = [];
-  allEvents.forEach(e => {
-    if (e._auto) return;
-    if (e.type === 'range') {
-      const s  = tupleToDays(e.start);
-      const en = e.end ? tupleToDays(e.end) : s;
-      if (s > (today || Infinity) + 10000) return;
-      // Dans la zone visible
-      if (en < visibleDayMin || s > visibleDayMax) return;
-      if (lodRangeOpacity(e) >= 0.1) return;
-      const px1 = dayToX(s);
-      const px2 = dayToX(en);
-      hiddenXs.push(Math.max(0, Math.min((px1 + px2) / 2, W)));
-    } else {
-      const d = tupleToDays(e.date);
-      if (d > (today || Infinity) + 10000) return;
-      if (d < visibleDayMin || d > visibleDayMax) return;
+  if (visibleEvt.type === 'range') {
+    const visTrack = trackMap ? (trackMap.get(visibleEvt.id) || 0) : 0;
+    const visStart = evtStartDays(visibleEvt);
+    const visEnd   = evtEndDays(visibleEvt);
+
+    // Trouver les ranges cachés sur le même track
+    let bestPrev = null; // caché juste avant (end <= visStart)
+    let bestNext = null; // caché juste après (start >= visEnd)
+
+    allEvents.forEach(e => {
+      if (e._auto || e.id === visibleEvt.id || e.type !== 'range') return;
+      if (lodRangeOpacity(e) >= 0.1) return; // visible → ignorer
+      const eTrack = trackMap ? (trackMap.get(e.id) || 0) : 0;
+      if (eTrack !== visTrack) return; // pas le même track
+      const eStart = evtStartDays(e);
+      const eEnd   = evtEndDays(e);
+
+      if (eEnd <= visStart) {
+        // Caché à gauche : garder le plus proche (end max)
+        if (!bestPrev || eEnd > evtEndDays(bestPrev)) bestPrev = e;
+      } else if (eStart >= visEnd) {
+        // Caché à droite : garder le plus proche (start min)
+        if (!bestNext || eStart < evtStartDays(bestNext)) bestNext = e;
+      }
+    });
+
+    // Priorité au voisin dans la zone visible, sinon l'autre
+    const visibleDayMin = xToDay(0);
+    const visibleDayMax = xToDay(W);
+    const candidates = [bestPrev, bestNext].filter(Boolean);
+    if (candidates.length === 0) return null;
+
+    // Trier par proximité temporelle avec le range visible
+    candidates.sort((a, b) => {
+      const distA = Math.min(Math.abs(evtStartDays(a) - visStart), Math.abs(evtEndDays(a) - visEnd));
+      const distB = Math.min(Math.abs(evtStartDays(b) - visStart), Math.abs(evtEndDays(b) - visEnd));
+      return distA - distB;
+    });
+    const best = candidates[0];
+    const bx = (dayToX(evtStartDays(best)) + dayToX(evtEndDays(best))) / 2;
+    return Math.max(4, Math.min(bx, W - 4));
+
+  } else {
+    // Point : voisins cachés dans la même rubrique
+    if (pointOp >= 0.5) return null; // tous visibles
+    const visDay = tupleToDays(visibleEvt.date);
+    let bestPrev = null, bestNext = null;
+
+    allEvents.forEach(e => {
+      if (e._auto || e.id === visibleEvt.id || e.type !== 'point') return;
       if (pointOp >= 0.5) return;
-      hiddenXs.push(Math.max(0, Math.min(dayToX(d), W)));
-    }
-  });
+      const d = tupleToDays(e.date);
+      if (d < visDay && (!bestPrev || d > tupleToDays(bestPrev.date))) bestPrev = e;
+      if (d > visDay && (!bestNext || d < tupleToDays(bestNext.date))) bestNext = e;
+    });
 
-  hiddenXs.sort((a, b) => a - b);
-  return hiddenXs;
+    const best = bestNext || bestPrev;
+    if (!best) return null;
+    const bx = dayToX(tupleToDays(best.date));
+    return Math.max(4, Math.min(bx, W - 4));
+  }
 }
 
-// Pour un événement visible, retourne la position X médiane des cachés à l'écran
-// ou null si aucun caché dans la zone visible
+// Compatibilité — plus utilisé directement mais gardé pour hasHiddenEventsNearby
 function hiddenNearbyX(visibleEvt, allEvents, today) {
-  const hiddenXs = hiddenEventsOnScreen(allEvents, today);
-  if (hiddenXs.length === 0) return null;
-  return hiddenXs[Math.floor(hiddenXs.length / 2)];
+  return null; // remplacé par hiddenNeighborX
 }
 
 function drawHiddenTriangle(x, y, col) {
@@ -6189,7 +6223,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.7.4</span></div>
+  <div class="about-row"><span>Version</span><span>0.7.5</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
