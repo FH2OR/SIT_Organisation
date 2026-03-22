@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.10</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.11</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2902,6 +2902,17 @@ function drawRow(tl, rowTop) {
   ctx.beginPath(); ctx.moveTo(0, rowTop + totalH); ctx.lineTo(W, rowTop + totalH); ctx.stroke();
 }
 
+// Tronque un texte avec "…" si trop large pour maxWidth
+function ellipsis(ctx, text, maxWidth) {
+  if (!text) return '';
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let t = text;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxWidth) {
+    t = t.slice(0, -1);
+  }
+  return t + '…';
+}
+
 function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = true) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
@@ -3024,10 +3035,9 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
       ctx.fillStyle = isFuture ? hexToRgba(col, 0.7) : 'rgba(255,255,255,0.9)';
       ctx.font = `16px "Source Sans 3", sans-serif`;
       ctx.textAlign = 'left';
-      ctx.save();
-      ctx.beginPath(); ctx.rect(cx1+2, top, cw - (endless ? 14 : 4), h); ctx.clip();
-      ctx.fillText(evt.title, cx1 + 5, trackCy + 4);
-      ctx.restore();
+      const maxW = cw - (endless ? 18 : 10);
+      const lbl  = ellipsis(ctx, evt.title, maxW);
+      ctx.fillText(lbl, cx1 + 5, trackCy + 4);
     }
     ctx.setLineDash([]);
     state.hitBoxes.push({ evt, tl, x1, y1: top, x2: endless ? W : x2, y2: top + h });
@@ -3299,10 +3309,9 @@ function drawSubEvent(evt, tl, cy, subTop, subH, trackMap, altMap, showLabels = 
       ctx.fillStyle = 'rgba(255,255,255,0.85)';
       ctx.font = `14px "Source Sans 3", sans-serif`;
       ctx.textAlign = 'left';
-      ctx.save();
-      ctx.beginPath(); ctx.rect(cx1+2, top, cw - (endless ? 12 : 4), h); ctx.clip();
-      ctx.fillText(evt.title, cx1 + 3, trackCy + 3);
-      ctx.restore();
+      const maxW = cw - (endless ? 16 : 8);
+      const lbl  = ellipsis(ctx, evt.title, maxW);
+      ctx.fillText(lbl, cx1 + 3, trackCy + 3);
     }
     state.hitBoxes.push({ evt, tl, x1, y1: top - 2, x2: endless ? W : x2, y2: top + h + 2 });
 
@@ -6540,7 +6549,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.10</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.11</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
