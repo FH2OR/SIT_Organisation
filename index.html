@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.5</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.6</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -2682,10 +2682,11 @@ function drawRow(tl, rowTop) {
     const parentEntry = refMap.get(evt.dep);
     if (!parentEntry) return;
     const parentEvt = parentEntry.evt;
+    if (!parentEvt) return; // parent est une rubrique → triangle non applicable ici
 
     // Le parent doit être visible
     const parentOp = lodRangeOpacity(parentEvt);
-    if (parentOp < 0.1) return; // parent caché → pas de triangle
+    if (parentOp < 0.1) return;
 
     // Le parent doit appartenir à cette timeline (ou une timeline active)
     const parentInThisTl = tl.events.includes(parentEvt);
@@ -2740,7 +2741,8 @@ function drawRow(tl, rowTop) {
         if (!evt.dep) return;
         const parentEntry = refMap.get(evt.dep);
         if (!parentEntry) return;
-        if (lodRangeOpacity(parentEntry.evt) < 0.1) return;
+        // Le parent peut être un événement ou une rubrique
+        if (parentEntry.evt && lodRangeOpacity(parentEntry.evt) < 0.1) return;
         const triX = dayToX(tupleToDays(evt.date));
         if (triX < -20 || triX > W + 20) return;
         drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), ptCy, evt.color || tl.color);
@@ -2796,7 +2798,7 @@ function drawRow(tl, rowTop) {
       if (!evt.dep) return;
       const parentEntry = refMap.get(evt.dep);
       if (!parentEntry) return;
-      if (lodRangeOpacity(parentEntry.evt) < 0.1) return;
+      if (parentEntry.evt && lodRangeOpacity(parentEntry.evt) < 0.1) return;
       const evtX1 = dayToX(evtStartDays(evt));
       const evtX2 = evt.end ? dayToX(evtEndDays(evt)) : W;
       if (evtX2 < 0 || evtX1 > W) return;
@@ -2837,7 +2839,7 @@ function drawRow(tl, rowTop) {
           if (!evt.dep) return;
           const parentEntry = refMap.get(evt.dep);
           if (!parentEntry) return;
-          if (lodRangeOpacity(parentEntry.evt) < 0.1) return;
+          if (parentEntry.evt && lodRangeOpacity(parentEntry.evt) < 0.1) return;
           const triX = dayToX(tupleToDays(evt.date));
           if (triX < -20 || triX > W + 20) return;
           drawHiddenTriangle(Math.max(4, Math.min(triX, W - 4)), subPtCy, evt.color || sub.color);
@@ -6490,7 +6492,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporaire</div>
-  <div class="about-row"><span>Version</span><span>0.8.5</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.6</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
