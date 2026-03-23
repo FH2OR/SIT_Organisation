@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.21</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.22</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -4434,6 +4434,17 @@ function addFromCatalogue(id, ensureParentId) {
   const cat = catalogueData.find(c => c.id === id);
   if (!cat) return;
 
+  // ── Vérifier les droits d'accès ─────────────────────────────
+  const restricted = cat.acces === 'abonne' || cat.acces === 'abonnement';
+  if (restricted && isAnonymous()) {
+    openSubscribePopup();
+    return;
+  }
+  if (restricted && !isAbonne()) {
+    openSubscribePopup();
+    return;
+  }
+
   // ── Remonter toute la chaîne d'ancêtres jusqu'à la racine ──
   // Construit la liste [racine, ..., parent direct] dans l'ordre descendant
   const ancestors = [];
@@ -6729,18 +6740,13 @@ resize();
 
 // ── Chargement automatique depuis Supabase au démarrage ───────
 (async function autoLoadFromSupabase() {
-  const hint = document.querySelector('.hints');
-  const originalHint = hint ? hint.textContent : '';
-  if (hint) hint.textContent = '☁️ Connexion à Supabase…';
-
   try {
     const rubs = await sbFetch(sbUrl('rubriques', '?select=id&limit=1'));
-    if (!rubs || rubs.length === 0) {
-      if (hint) hint.textContent = originalHint;
-      return;
-    }
+    if (!rubs || rubs.length === 0) return;
 
     await dbPullCatalogue();
+    // Reconstruire le catalogue avec les bons droits après chargement
+    buildCatalogueList('');
 
     // Restaurer la dernière sauvegarde automatique uniquement si connecté
     if (currentUser) {
@@ -6756,11 +6762,8 @@ resize();
         }
       }
     }
-
-    if (hint) hint.textContent = originalHint;
   } catch (err) {
     console.warn('[autoLoad] Supabase non disponible :', err.message);
-    if (hint) hint.textContent = originalHint;
   }
 })();
 </script>
@@ -6768,7 +6771,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.21</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.22</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
