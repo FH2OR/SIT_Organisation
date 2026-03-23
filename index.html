@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.22</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.23</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -4333,8 +4333,10 @@ function buildCatalogueList(filter) {
 
     // Droits selon rôle courant
     const role       = userRole();
-    const isLocked   = (root.acces === 'abonnement' || root.acces === 'abonne') && role === 'anonyme';
-    const isRestricted = (root.acces === 'abonnement' || root.acces === 'abonne');
+    // acces peut valoir 'public', 'abonne', 'abonnement', null, undefined
+    const accesVal   = root.acces || 'public';
+    const isRestricted = accesVal === 'abonne' || accesVal === 'abonnement';
+    const isLocked   = isRestricted && !isAbonne();
     const hasAccess  = !isLocked;
 
     // Couleur de fond et badge selon acces
@@ -4403,7 +4405,8 @@ function buildCatalogueList(filter) {
     const subsToShow = rootMatch ? subs : matchingSubs;
     subsToShow.forEach(sub => {
       const alreadySub = activeIds.has(sub.id);
-      const subLocked  = sub.acces === 'abonnement' && role === 'anonyme';
+      const subAcces   = sub.acces || 'public';
+      const subLocked  = (subAcces === 'abonnement' || subAcces === 'abonne') && !isAbonne();
       const subEl = document.createElement('div');
       subEl.className = 'cat-item cat-sub' + (alreadySub ? ' cat-already' : '') + (subLocked ? ' locked' : '');
       const typeIcon = sub.defaultType === 'range' ? '▬' : '◉';
@@ -4435,11 +4438,12 @@ function addFromCatalogue(id, ensureParentId) {
   if (!cat) return;
 
   // ── Vérifier les droits d'accès ─────────────────────────────
-  const restricted = cat.acces === 'abonne' || cat.acces === 'abonnement';
-  if (restricted && isAnonymous()) {
-    openSubscribePopup();
-    return;
-  }
+  // Trouver la rubrique racine (ancêtre ou elle-même)
+  const rootCat = cat.parentId
+    ? catalogueData.find(c => c.id === cat.parentId) || cat
+    : cat;
+  const accesVal = rootCat.acces || cat.acces || 'public';
+  const restricted = accesVal === 'abonne' || accesVal === 'abonnement';
   if (restricted && !isAbonne()) {
     openSubscribePopup();
     return;
@@ -6771,7 +6775,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.22</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.23</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
