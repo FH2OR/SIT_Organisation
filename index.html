@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.23</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.24</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -4331,55 +4331,40 @@ function buildCatalogueList(filter) {
 
     anyVisible = true;
 
-    // Droits selon rôle courant
-    const role       = userRole();
-    // acces peut valoir 'public', 'abonne', 'abonnement', null, undefined
-    const accesVal   = root.acces || 'public';
+    // Droits d'accès : on vérifie si la rubrique est restreinte aux abonnés
+    const accesVal    = (root.acces || 'public').toLowerCase().trim();
     const isRestricted = accesVal === 'abonne' || accesVal === 'abonnement';
-    const isLocked   = isRestricted && !isAbonne();
-    const hasAccess  = !isLocked;
+    const canAdd      = !isRestricted || isAbonne();
 
-    // Couleur de fond et badge selon acces
-    const accesBg = isRestricted ? 'rgba(200,169,110,0.10)' : 'transparent';
-    const dotBorder = isRestricted
-      ? '2px solid rgba(200,169,110,0.6)'
-      : `2px solid ${root.color}`;
-    const accesLabel = isRestricted
-      ? '<span style="font-size:9px;color:#c8a96e;margin-left:4px;border:1px solid rgba(200,169,110,0.4);padding:0 3px;border-radius:3px;flex-shrink:0">⭐ abonné</span>'
-      : (role === 'superuser' ? '<span style="font-size:9px;color:var(--text-dim);margin-left:4px;border:1px solid var(--border);padding:0 3px;border-radius:3px;flex-shrink:0">public</span>' : '');
-
-    // Ligne racine
-    const el = document.createElement('div');
-    const alreadyRoot = activeIds.has(root.id);
-    el.className = 'cat-item' + (alreadyRoot ? ' cat-already' : '') + (isLocked ? ' locked' : '');
-    el.style.background = accesBg;
-    if (isRestricted) el.style.borderLeft = '3px solid rgba(200,169,110,0.5)';
-
-    // Bouton toggle acces (superuser seulement)
-    const accesToggle = role === 'superuser'
-      ? `<button class="cat-acces-btn" data-id="${root.id}" title="Changer l'accès (public / abonné)" style="
-          font-size:9px;padding:1px 5px;border-radius:3px;cursor:pointer;
-          background:transparent;border:1px solid var(--border);color:var(--text-dim);
-          margin-left:4px;flex-shrink:0">⚙</button>`
+    // Visuel selon accès
+    const accesBg   = isRestricted ? 'rgba(200,169,110,0.10)' : 'transparent';
+    const accesLabel = isRestricted && isSuperuser()
+      ? '<span style="font-size:9px;color:#c8a96e;margin-left:4px;border:1px solid rgba(200,169,110,0.4);padding:0 3px;border-radius:3px">⭐ abonné</span>'
       : '';
 
-    const lockIcon = isLocked ? ' 🔒' : '';
+    const el = document.createElement('div');
+    const alreadyRoot = activeIds.has(root.id);
+    el.className = 'cat-item' + (alreadyRoot ? ' cat-already' : '');
+    el.style.background = accesBg;
+    if (isRestricted) el.style.borderLeft = '3px solid rgba(200,169,110,0.4)';
+
+    // Bouton ⚙ toggle accès (superuser seulement)
+    const accesToggle = isSuperuser()
+      ? `<button class="cat-acces-btn" title="Changer l'accès" style="font-size:9px;padding:1px 5px;border-radius:3px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-dim);margin-left:4px;flex-shrink:0">⚙</button>`
+      : '';
+
     el.innerHTML = `
-      <div class="cat-dot" style="background:${root.color};border:${dotBorder}"></div>
-      <div class="cat-label" style="flex:1">${root.title}${lockIcon}${accesLabel}</div>
+      <div class="cat-dot" style="background:${root.color}"></div>
+      <div class="cat-label" style="flex:1">${root.title}${accesLabel}</div>
       ${accesToggle}
-      ${!alreadyRoot && hasAccess ? `<button class="cat-add-btn" title="Ajouter à la carte">＋</button>` :
-        alreadyRoot ? '<span style="font-size:10px;color:var(--text-dim)">✓</span>' : ''}
+      ${alreadyRoot
+        ? '<span style="font-size:10px;color:var(--text-dim)">✓</span>'
+        : canAdd
+        ? `<button class="cat-add-btn" title="Ajouter à la carte">＋</button>`
+        : ''}
     `;
 
-    if (isLocked) {
-      el.style.cursor = 'pointer';
-      el.title = 'Contenu réservé aux abonnés — cliquez pour en savoir plus';
-      el.addEventListener('click', e => {
-        if (e.target.closest('.cat-acces-btn')) return;
-        openSubscribePopup();
-      });
-    } else if (!alreadyRoot) {
+    if (!alreadyRoot && canAdd) {
       const addBtn = el.querySelector('.cat-add-btn');
       if (addBtn) addBtn.addEventListener('click', e => { e.stopPropagation(); addFromCatalogue(root.id); });
     }
@@ -6775,7 +6760,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.23</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.24</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
