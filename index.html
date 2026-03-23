@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.20</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.21</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -1373,6 +1373,18 @@
         <div id="profile-status" style="margin-top:8px;font-size:12px;padding:4px 10px;border-radius:12px;display:inline-block"></div>
       </div>
       <div id="profile-abonnement" style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--text-mid)"></div>
+
+      <!-- Gestion des groupes (superuser uniquement) -->
+      <div id="panel-gestion-groupes" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+          🔧 Gestion des utilisateurs
+        </div>
+        <div id="users-list" style="font-size:12px;max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+        <button onclick="loadUsersList()" style="margin-top:10px;font-size:11px;padding:4px 12px;
+          background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--text);cursor:pointer;width:100%">
+          ↻ Actualiser la liste
+        </button>
+      </div>
       <button class="auth-submit" onclick="authLogout()"
         style="background:rgba(231,76,60,0.12);border-color:rgba(231,76,60,0.4);color:#e74c3c">
         Déconnexion
@@ -1713,6 +1725,14 @@
     <div class="cm-field">
       <div class="cm-label">Photo <span style="color:var(--text-dim);font-size:9px">(URL, optionnel)</span></div>
       <input type="text" class="cm-input" id="cm-photo" placeholder="https://…">
+    </div>
+
+    <div class="cm-field" id="cm-acces-field" style="display:none">
+      <div class="cm-label">Accès</div>
+      <select class="cm-select" id="cm-acces">
+        <option value="public">🌐 Public</option>
+        <option value="abonne">⭐ Abonnés uniquement</option>
+      </select>
     </div>
 
     <div class="cm-actions">
@@ -3592,6 +3612,7 @@ canvas.addEventListener('contextmenu', e => {
   );
 });
 canvas.addEventListener('dblclick', e => {
+  if (!canCreate()) return; // anonymes ne peuvent pas créer
   // Ne pas ouvrir si on double-clique sur un événement existant
   const hit = hitTest(e.offsetX, e.offsetY);
   if (hit) return;
@@ -3775,6 +3796,11 @@ function openCreateModal(clickDay, targetTl, forceType, endDay) {
 
   setCreateType(cmType);
 
+  // Champ acces : visible seulement pour superuser
+  const accesField = document.getElementById('cm-acces-field');
+  accesField.style.display = isSuperuser() ? '' : 'none';
+  document.getElementById('cm-acces').value = 'public';
+
   document.getElementById('create-modal-overlay').classList.add('open');
   document.getElementById('cm-title').focus();
 }
@@ -3819,15 +3845,19 @@ function submitCreateEvent() {
   const startTuple = parseInputDate(startRaw);
   if (!startTuple) { alert('Date de début invalide.\nFormats acceptés : 1789 · -44 · 14/07/1789 · 07/1789'); return; }
 
+  // Accès et propriétaire
+  const acces   = isSuperuser() ? (document.getElementById('cm-acces').value || 'public') : 'public';
+  const user_id = currentUser?.id || null;
+
   const newId = 'evt_' + Date.now();
   let evt;
 
   if (cmType === 'range') {
     const endTuple = parseInputDate(endRaw || startRaw);
     if (!endTuple) { alert('Date de fin invalide.'); return; }
-    evt = { id: newId, type: 'range', start: startTuple, end: endTuple, title, color: tl.color, comment, photo };
+    evt = { id: newId, type: 'range', start: startTuple, end: endTuple, title, color: tl.color, comment, photo, acces, user_id };
   } else {
-    evt = { id: newId, type: 'point', date: startTuple, title, color: tl.color, comment, photo };
+    evt = { id: newId, type: 'point', date: startTuple, title, color: tl.color, comment, photo, acces, user_id };
   }
 
   // Ajouter l'événement
@@ -4295,44 +4325,85 @@ function buildCatalogueList(filter) {
   roots.forEach(root => {
     const subs = catalogueData.filter(s => s.parentId === root.id);
 
-    // Filtrage : on affiche la racine si elle-même ou une sous-rubrique matche
     const rootMatch = !q || root.title.toLowerCase().includes(q);
     const matchingSubs = subs.filter(s => !q || s.title.toLowerCase().includes(q));
-
     if (!rootMatch && matchingSubs.length === 0) return;
 
     anyVisible = true;
 
-    // Vérifier si l'utilisateur a accès à cette rubrique
-    const isAbonne = currentProfil?.abonnement === 'abonne' && currentProfil?.statut === 'actif';
+    // Droits selon rôle courant
+    const role       = userRole();
+    const isLocked   = (root.acces === 'abonnement' || root.acces === 'abonne') && role === 'anonyme';
+    const isRestricted = (root.acces === 'abonnement' || root.acces === 'abonne');
+    const hasAccess  = !isLocked;
+
+    // Couleur de fond et badge selon acces
+    const accesBg = isRestricted ? 'rgba(200,169,110,0.10)' : 'transparent';
+    const dotBorder = isRestricted
+      ? '2px solid rgba(200,169,110,0.6)'
+      : `2px solid ${root.color}`;
+    const accesLabel = isRestricted
+      ? '<span style="font-size:9px;color:#c8a96e;margin-left:4px;border:1px solid rgba(200,169,110,0.4);padding:0 3px;border-radius:3px;flex-shrink:0">⭐ abonné</span>'
+      : (role === 'superuser' ? '<span style="font-size:9px;color:var(--text-dim);margin-left:4px;border:1px solid var(--border);padding:0 3px;border-radius:3px;flex-shrink:0">public</span>' : '');
 
     // Ligne racine
     const el = document.createElement('div');
     const alreadyRoot = activeIds.has(root.id);
-    const rootLocked  = root.acces === 'abonnement' && !isAbonne;
-    el.className = 'cat-item' + (alreadyRoot ? ' cat-already' : '') + (rootLocked ? ' locked' : '');
+    el.className = 'cat-item' + (alreadyRoot ? ' cat-already' : '') + (isLocked ? ' locked' : '');
+    el.style.background = accesBg;
+    if (isRestricted) el.style.borderLeft = '3px solid rgba(200,169,110,0.5)';
+
+    // Bouton toggle acces (superuser seulement)
+    const accesToggle = role === 'superuser'
+      ? `<button class="cat-acces-btn" data-id="${root.id}" title="Changer l'accès (public / abonné)" style="
+          font-size:9px;padding:1px 5px;border-radius:3px;cursor:pointer;
+          background:transparent;border:1px solid var(--border);color:var(--text-dim);
+          margin-left:4px;flex-shrink:0">⚙</button>`
+      : '';
+
+    const lockIcon = isLocked ? ' 🔒' : '';
     el.innerHTML = `
-      <div class="cat-dot" style="background:${root.color};border-color:${root.color}"></div>
-      <div class="cat-label">${root.title}${rootLocked ? ' <span class="cat-lock">🔒</span>' : ''}</div>
-      ${!alreadyRoot && !rootLocked ? `<button class="cat-add-btn" title="Ajouter à la carte">＋</button>` :
+      <div class="cat-dot" style="background:${root.color};border:${dotBorder}"></div>
+      <div class="cat-label" style="flex:1">${root.title}${lockIcon}${accesLabel}</div>
+      ${accesToggle}
+      ${!alreadyRoot && hasAccess ? `<button class="cat-add-btn" title="Ajouter à la carte">＋</button>` :
         alreadyRoot ? '<span style="font-size:10px;color:var(--text-dim)">✓</span>' : ''}
     `;
-    if (!alreadyRoot && rootLocked) {
+
+    if (isLocked) {
       el.style.cursor = 'pointer';
-      el.addEventListener('click', () => openSubscribePopup());
-    } else if (!alreadyRoot) {
-      el.querySelector('.cat-add-btn').addEventListener('click', e => {
-        e.stopPropagation();
-        addFromCatalogue(root.id);
+      el.title = 'Contenu réservé aux abonnés — cliquez pour en savoir plus';
+      el.addEventListener('click', e => {
+        if (e.target.closest('.cat-acces-btn')) return;
+        openSubscribePopup();
       });
+    } else if (!alreadyRoot) {
+      const addBtn = el.querySelector('.cat-add-btn');
+      if (addBtn) addBtn.addEventListener('click', e => { e.stopPropagation(); addFromCatalogue(root.id); });
     }
+
+    // Toggle acces superuser
+    const accesBtn = el.querySelector('.cat-acces-btn');
+    if (accesBtn) accesBtn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const cat = catalogueData.find(c => c.id === root.id);
+      if (!cat) return;
+      const newAcces = (cat.acces === 'abonnement' || cat.acces === 'abonne') ? 'public' : 'abonne';
+      cat.acces = newAcces;
+      try {
+        await sbFetch(sbUrl('rubriques', `?id=eq.${encodeURIComponent(root.id)}`),
+          { method: 'PATCH', body: JSON.stringify({ acces: newAcces }) });
+      } catch(err) { console.warn('[acces]', err); }
+      buildCatalogueList(document.getElementById('cat-search').value);
+    });
+
     list.appendChild(el);
 
-    // Sous-rubriques (afficher toutes si rootMatch, sinon seulement les matchingSubs)
+    // Sous-rubriques
     const subsToShow = rootMatch ? subs : matchingSubs;
     subsToShow.forEach(sub => {
       const alreadySub = activeIds.has(sub.id);
-      const subLocked  = sub.acces === 'abonnement' && !isAbonne;
+      const subLocked  = sub.acces === 'abonnement' && role === 'anonyme';
       const subEl = document.createElement('div');
       subEl.className = 'cat-item cat-sub' + (alreadySub ? ' cat-already' : '') + (subLocked ? ' locked' : '');
       const typeIcon = sub.defaultType === 'range' ? '▬' : '◉';
@@ -4346,10 +4417,8 @@ function buildCatalogueList(filter) {
         subEl.style.cursor = 'pointer';
         subEl.addEventListener('click', () => openSubscribePopup());
       } else if (!alreadySub) {
-        subEl.querySelector('.cat-add-btn').addEventListener('click', e => {
-          e.stopPropagation();
-          addFromCatalogue(sub.id, root.id);
-        });
+        const addBtn = subEl.querySelector('.cat-add-btn');
+        if (addBtn) addBtn.addEventListener('click', e => { e.stopPropagation(); addFromCatalogue(sub.id, root.id); });
       }
       list.appendChild(subEl);
     });
@@ -4679,6 +4748,14 @@ function showFCDetail(evt, tl) {
   const fc = document.getElementById('fc');
   fc.classList.remove('collapsed');
   fc.style.width = 'var(--fc-w)';
+
+  // ── Visibilité bouton Éditer selon droits ─────────────────
+  const editBtn = document.querySelector('.fc-edit-btn');
+  if (editBtn) editBtn.style.display = canEdit(evt) ? '' : 'none';
+
+  // ── Visibilité bouton ✚ Événement selon droits ────────────
+  const newEvtBtn = document.getElementById('btn-new-evt');
+  if (newEvtBtn) newEvtBtn.style.display = canCreate() ? '' : 'none';
 }
 
 function clearFCDetail() {
@@ -6301,14 +6378,28 @@ function updateAuthUI() {
     document.getElementById('profile-username').textContent =
       `@${currentProfil.username}`;
     const statusEl = document.getElementById('profile-status');
-    statusEl.textContent = currentProfil.statut === 'actif' ? '● Actif' : '⏳ En attente';
-    statusEl.style.background = currentProfil.statut === 'actif'
-      ? 'rgba(82,183,136,0.15)' : 'rgba(212,176,122,0.15)';
-    statusEl.style.color = currentProfil.statut === 'actif' ? '#52b788' : 'var(--accent)';
+    if (currentProfil.statut === 'superuser') {
+      statusEl.textContent = '🔧 Superuser';
+      statusEl.style.background = 'rgba(231,76,60,0.15)';
+      statusEl.style.color = '#e74c3c';
+    } else {
+      statusEl.textContent = currentProfil.statut === 'actif' ? '● Actif' : '⏳ En attente';
+      statusEl.style.background = currentProfil.statut === 'actif'
+        ? 'rgba(82,183,136,0.15)' : 'rgba(212,176,122,0.15)';
+      statusEl.style.color = currentProfil.statut === 'actif' ? '#52b788' : 'var(--accent)';
+    }
     document.getElementById('profile-abonnement').textContent =
       currentProfil.abonnement === 'abonne'
         ? '⭐ Abonnement actif'
         : '🔓 Accès gratuit — contactez-nous pour vous abonner';
+    // Panneau gestion groupes : visible seulement pour superuser
+    const panelGroupes = document.getElementById('panel-gestion-groupes');
+    if (isSuperuser()) {
+      panelGroupes.style.display = 'block';
+      loadUsersList();
+    } else {
+      panelGroupes.style.display = 'none';
+    }
     // Afficher l'onglet profil
     document.getElementById('tab-profile').style.display = '';
   } else {
@@ -6316,6 +6407,11 @@ function updateAuthUI() {
     btn.classList.remove('connected');
     document.getElementById('tab-profile').style.display = 'none';
   }
+  // Bouton création événement : masqué pour anonymes
+  const newEvtBtn = document.getElementById('btn-new-evt');
+  if (newEvtBtn) newEvtBtn.style.display = canCreate() ? '' : 'none';
+  // Reconstruire le catalogue pour refléter les droits
+  buildCatalogueList(document.getElementById('cat-search')?.value || '');
 }
 
 // ── Helpers messages ──────────────────────────────────────────
@@ -6461,10 +6557,100 @@ function getLodOpacity(id, targetOpacity) {
 
 // Animation de clignotement supprimée — remplacée par triangle fixe
 
+
 // ── Vérifier si l'utilisateur courant est admin ───────────────
-function isAdmin() {
-  return currentProfil && currentProfil.username === ADMIN_USERNAME;
+// ═══════════════════════════════════════════════════════════════
+//  GESTION DES GROUPES (superuser)
+// ═══════════════════════════════════════════════════════════════
+async function loadUsersList() {
+  if (!isSuperuser()) return;
+  const container = document.getElementById('users-list');
+  container.innerHTML = '<div style="color:var(--text-dim);padding:8px">Chargement…</div>';
+  try {
+    const users = await sbFetch(sbUrl('profils',
+      '?select=id,prenom,nom,username,statut,abonnement&order=created_at.asc'));
+    if (!users || !users.length) {
+      container.innerHTML = '<div style="color:var(--text-dim);padding:8px">Aucun utilisateur.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    users.forEach(u => {
+      const role = u.statut === 'superuser' ? 'superuser'
+                 : (u.statut === 'actif' && u.abonnement === 'abonne') ? 'abonne'
+                 : 'anonyme';
+      const roleColor = role === 'superuser' ? '#e74c3c' : role === 'abonne' ? '#f5a623' : '#4a6080';
+      const roleLabel = role === 'superuser' ? '🔧 Superuser' : role === 'abonne' ? '⭐ Abonné' : '👤 Anonyme';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)';
+      row.innerHTML = `
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${esc(u.prenom)} ${esc(u.nom)}<span style="color:var(--text-dim);font-size:10px"> @${esc(u.username)}</span>
+          </div>
+          <div style="font-size:10px;color:${roleColor};margin-top:1px">${roleLabel}</div>
+        </div>
+        <select onchange="setUserRole('${u.id}', this.value)"
+          style="font-size:11px;padding:2px 4px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:3px;cursor:pointer">
+          <option value="anonyme"   ${role==='anonyme'   ?'selected':''}>Anonyme</option>
+          <option value="abonne"    ${role==='abonne'    ?'selected':''}>Abonné</option>
+          <option value="superuser" ${role==='superuser' ?'selected':''}>Superuser</option>
+        </select>
+      `;
+      container.appendChild(row);
+    });
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--err);padding:8px">Erreur : ${e.message}</div>`;
+  }
 }
+
+async function setUserRole(userId, newRole) {
+  if (!isSuperuser()) return;
+  if (userId === currentUser?.id && newRole !== 'superuser') {
+    if (!confirm('Vous allez modifier votre propre rôle. Continuer ?')) { await loadUsersList(); return; }
+  }
+  let statut, abonnement;
+  if (newRole === 'superuser')   { statut = 'superuser';  abonnement = 'abonne'; }
+  else if (newRole === 'abonne') { statut = 'actif';      abonnement = 'abonne'; }
+  else                           { statut = 'en_attente'; abonnement = 'non'; }
+  try {
+    await sbFetch(sbUrl('profils', `?id=eq.${userId}`), {
+      method: 'PATCH', body: JSON.stringify({ statut, abonnement })
+    });
+    await loadUsersList();
+  } catch(e) {
+    document.getElementById('profile-msg').textContent = 'Erreur : ' + e.message;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GESTION DES RÔLES
+//  anonyme  = non connecté
+//  abonne   = connecté + statut actif + abonnement abonne
+//  superuser = connecté + statut superuser
+// ═══════════════════════════════════════════════════════════════
+function userRole() {
+  if (!currentProfil) return 'anonyme';
+  if (currentProfil.statut === 'superuser') return 'superuser';
+  if (currentProfil.statut === 'actif' && currentProfil.abonnement === 'abonne') return 'abonne';
+  return 'anonyme';
+}
+function isSuperuser()  { return userRole() === 'superuser'; }
+function isAbonne()     { return userRole() === 'abonne' || userRole() === 'superuser'; }
+function isAnonymous()  { return userRole() === 'anonyme'; }
+
+// Compatibilité avec l'ancien isAdmin()
+function isAdmin() { return isSuperuser(); }
+
+// Peut-on créer un événement ?
+function canCreate()               { return !isAnonymous(); }
+// Peut-on éditer/supprimer un événement donné ?
+function canEdit(evt)              {
+  if (isSuperuser()) return true;
+  if (isAnonymous()) return false;
+  // Abonné : seulement ses propres événements
+  return evt && evt.user_id && evt.user_id === currentUser?.id;
+}
+function canDelete(evt)            { return canEdit(evt); }
 
 // ═══════════════════════════════════════════════════════════════
 //  MODE ADMIN — Éditeur d'importance
@@ -6582,7 +6768,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.20</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.21</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
