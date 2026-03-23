@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.24</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.25</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -4375,7 +4375,7 @@ function buildCatalogueList(filter) {
       e.stopPropagation();
       const cat = catalogueData.find(c => c.id === root.id);
       if (!cat) return;
-      const newAcces = (cat.acces === 'abonnement' || cat.acces === 'abonne') ? 'public' : 'abonne';
+      const newAcces = (cat.acces === 'abonnement' || cat.acces === 'abonne') ? 'public' : 'abonnement';
       cat.acces = newAcces;
       try {
         await sbFetch(sbUrl('rubriques', `?id=eq.${encodeURIComponent(root.id)}`),
@@ -6760,7 +6760,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.24</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.25</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
