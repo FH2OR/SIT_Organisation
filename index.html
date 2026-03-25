@@ -1489,12 +1489,12 @@
 
     <!-- Zone saisie -->
     <div id="splash-form">
+      <button id="splash-anon-btn"  onclick="splashAnonymous()" title="Accès aux rubriques publiques uniquement">Anonyme</button>
       <div id="splash-fields">
         <input type="email"    id="splash-email"    placeholder="Adresse e-mail" autocomplete="username">
         <input type="password" id="splash-password" placeholder="Mot de passe"   autocomplete="current-password">
         <button id="splash-login-btn" onclick="splashLogin()">→ Connexion</button>
       </div>
-      <button id="splash-anon-btn"  onclick="splashAnonymous()" title="Accès aux rubriques publiques uniquement">Anonyme</button>
       <div id="splash-quit-sep"></div>
       <button id="splash-quit-btn"  onclick="window.close()" title="Quitter">Quitter</button>
     </div>
@@ -1510,7 +1510,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.38</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.39</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6995,65 +6995,42 @@ function splashStartPhotos(urls) {
   const container = document.getElementById('splash-photos');
   if (!track || !urls.length) return;
 
-  const H    = 140;
-  const W    = container.offsetWidth || 620;
-  const GAP  = 20;   // espace entre images
-  let   pool = [...urls]; // copie pour cycler
+  const H = 140;
+  // Dupliquer les URLs pour un défilement sans rupture
+  const allUrls = [...urls, ...urls, ...urls];
 
-  // File d'images actives : { img, x, w }
-  const active = [];
-  let   nextUrl = 0;
-  let   nextX   = 0;  // position X d'entrée de la prochaine image
-
-  function addImage() {
-    const url = pool[nextUrl % pool.length];
-    nextUrl++;
+  // Créer toutes les images côte à côte dans le track
+  track.style.cssText = 'position:absolute;top:0;left:0;display:flex;flex-direction:row;';
+  allUrls.forEach(url => {
     const img = document.createElement('img');
-    img.style.cssText = `position:absolute;top:0;height:${H}px;opacity:0.8;`;
     img.src = url;
+    img.style.cssText = `height:${H}px;width:auto;object-fit:cover;opacity:0.8;flex-shrink:0;margin-right:16px;`;
     track.appendChild(img);
-    const item = { img, x: nextX, w: 0 };
-    active.push(item);
-    img.onload = () => {
-      item.w = img.naturalWidth * (H / img.naturalHeight) || 200;
-      nextX  = item.x + item.w + GAP;
-    };
-    img.onerror = () => { item.w = 200; nextX = item.x + item.w + GAP; };
-    // Estimation avant chargement
-    setTimeout(() => { if (!item.w) { item.w = 200; nextX = item.x + item.w + GAP; } }, 300);
-    return item;
-  }
+  });
 
-  // Amorcer avec assez d'images pour couvrir la largeur + une de réserve
-  nextX = -W * 0.5; // commencer légèrement hors écran gauche
-  while (nextX < W + 300) addImage();
-
-  const SPEED = 0.8; // px/frame
-
-  function animate() {
-    active.forEach(it => {
-      it.x += SPEED;
-      it.img.style.left = Math.round(it.x) + 'px';
-    });
-
-    // Supprimer les images sorties à droite
-    for (let i = active.length - 1; i >= 0; i--) {
-      if (active[i].x > W + 10) {
-        active[i].img.remove();
-        active.splice(i, 1);
-      }
+  // Attendre que les images chargent pour mesurer la largeur totale
+  let started = false;
+  function startScroll() {
+    if (started) return;
+    started = true;
+    const totalW = track.scrollWidth;
+    const W      = container.offsetWidth || 620;
+    let x = 0;
+    const SPEED = 0.6;
+    function animate() {
+      x += SPEED;
+      // Remettre au début quand on a parcouru 1/3 (un set complet)
+      if (x >= totalW / 3) x = 0;
+      track.style.transform = `translateX(${-x}px)`;
+      _splashAnim = requestAnimationFrame(animate);
     }
-
-    // Ajouter une nouvelle image quand la dernière est assez avancée
-    const last = active[active.length - 1];
-    if (last && (last.x + (last.w || 200) + GAP) < W + 200) {
-      nextX = last.x + (last.w || 200) + GAP;
-      addImage();
-    }
-
     _splashAnim = requestAnimationFrame(animate);
   }
-  _splashAnim = requestAnimationFrame(animate);
+
+  // Démarrer après un délai pour laisser les images charger
+  setTimeout(startScroll, 800);
+  // Fallback si images déjà en cache
+  if (track.children.length > 0) setTimeout(startScroll, 100);
 }
 
 async function splashLoadPhotos() {
@@ -7111,7 +7088,7 @@ async function splashLoadPhotos() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.38</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.39</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
