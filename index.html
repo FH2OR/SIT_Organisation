@@ -1306,15 +1306,211 @@
     40%       { transform: translateX(-5px); }
   }
   .canvas-draw-hint.visible { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════
+   ÉCRAN DE CONNEXION
+═══════════════════════════════════════════════════ */
+#splash-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(10,14,22,0.97);
+  display: flex; align-items: center; justify-content: center;
+}
+#splash-overlay.hidden { display: none; }
+
+#splash-box {
+  width: 620px;
+  background: #0e1625;
+  border: 1px solid #2a3a5a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  display: flex; flex-direction: column;
+}
+
+/* ── Photos défilantes ── */
+#splash-photos {
+  height: 140px;
+  background: #060c18;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+#splash-track {
+  display: flex;
+  height: 100%;
+  position: absolute;
+  top: 0; left: 0;
+}
+#splash-track .sp-img {
+  height: 140px;
+  width: auto;
+  object-fit: cover;
+  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  opacity: 0.75;
+}
+#splash-logo {
+  position: absolute;
+  inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700;
+  color: rgba(200,169,110,0.9);
+  letter-spacing: .08em;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Formulaire ── */
+#splash-form {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #111a2e;
+  border-top: 1px solid #1e2e4a;
+  border-bottom: 1px solid #1e2e4a;
+  flex-shrink: 0;
+}
+#splash-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#splash-fields input {
+  background: #0e1625;
+  border: 1px solid #2a3a5a;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 7px;
+  outline: none;
+  width: 180px;
+  box-sizing: border-box;
+  font-family: "Source Sans 3", sans-serif;
+}
+#splash-fields input:focus { border-color: var(--accent); }
+
+#splash-login-btn {
+  margin-top: 3px;
+  background: rgba(200,169,110,0.15);
+  border: 1px solid rgba(200,169,110,0.4);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: "Source Sans 3", sans-serif;
+  width: 100%;
+  transition: background .15s;
+}
+#splash-login-btn:hover { background: rgba(200,169,110,0.28); }
+
+#splash-anon-btn {
+  background: rgba(82,183,136,0.12);
+  border: 1px solid rgba(82,183,136,0.35);
+  color: #52b788;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  width: 60px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: "Source Sans 3", sans-serif;
+  transition: background .15s;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+#splash-anon-btn:hover { background: rgba(82,183,136,0.25); }
+
+/* séparateur visuel avant Quitter */
+#splash-quit-sep {
+  width: 1px;
+  background: #1e2e4a;
+  align-self: stretch;
+  margin: 0 2px;
+}
+
+#splash-quit-btn {
+  background: rgba(231,76,60,0.10);
+  border: 1px solid rgba(231,76,60,0.35);
+  color: #e74c3c;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: "Source Sans 3", sans-serif;
+  transition: background .15s;
+  white-space: nowrap;
+  margin-left: auto;
+}
+#splash-quit-btn:hover { background: rgba(231,76,60,0.25); }
+
+/* ── Copyright + message ── */
+#splash-copyright {
+  font-size: 11px;
+  color: #7a9abf;
+  text-align: left;
+  padding: 8px 14px;
+  background: #0c1220;
+  letter-spacing: .04em;
+  border-top: 1px solid #1a2840;
+}
+#splash-msg {
+  display: none;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 10px 6px;
+  background: #0a0f1a;
+  color: #e74c3c;
+}
+#splash-msg.ok { color: #52b788; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-<!-- Z1 -->
+<!-- ═══════════════════════════════════════════════════════════
+     ÉCRAN DE CONNEXION — affiché au démarrage
+═══════════════════════════════════════════════════════════ -->
+<div id="splash-overlay">
+  <div id="splash-box">
+
+    <!-- Zone photos défilantes -->
+    <div id="splash-photos">
+      <div id="splash-track"></div>
+      <div id="splash-logo">⏳ S.I.T.</div>
+    </div>
+
+    <!-- Zone saisie -->
+    <div id="splash-form">
+      <div id="splash-fields">
+        <input type="email"    id="splash-email"    placeholder="Adresse e-mail" autocomplete="username">
+        <input type="password" id="splash-password" placeholder="Mot de passe"   autocomplete="current-password">
+        <button id="splash-login-btn" onclick="splashLogin()">→ Connexion</button>
+      </div>
+      <button id="splash-anon-btn"  onclick="splashAnonymous()" title="Accès aux rubriques publiques uniquement">Anonyme</button>
+      <div id="splash-quit-sep"></div>
+      <button id="splash-quit-btn"  onclick="window.close()" title="Quitter">Quitter</button>
+    </div>
+
+    <!-- Copyright -->
+    <div id="splash-copyright">© Copyright : SIT.Organisations — Mars 2026 — Tous droits réservés</div>
+
+    <!-- Message erreur -->
+    <div id="splash-msg"></div>
+  </div>
+</div>
+
+
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.32</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.35</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6740,8 +6936,113 @@ document.getElementById('fc').classList.add('collapsed');
 document.getElementById('fc').style.width = '0';
 resize();
 
+// ═══════════════════════════════════════════════════════════════
+//  ÉCRAN DE CONNEXION (SPLASH)
+// ═══════════════════════════════════════════════════════════════
+
+function splashHide() {
+  document.getElementById('splash-overlay').classList.add('hidden');
+}
+
+function splashMsg(msg, type = 'err') {
+  const el = document.getElementById('splash-msg');
+  el.textContent = msg;
+  el.className = type;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+// Connexion depuis l'écran splash
+async function splashLogin() {
+  const email    = document.getElementById('splash-email').value.trim();
+  const password = document.getElementById('splash-password').value;
+  if (!email || !password) { splashMsg('Email et mot de passe requis.'); return; }
+  splashMsg('Connexion…', 'ok');
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || 'Identifiants incorrects');
+    splashMsg('');
+    splashHide();
+    await onLoginSuccess(data);
+  } catch(e) { splashMsg('❌ ' + e.message); }
+}
+
+// Accès anonyme
+function splashAnonymous() {
+  splashHide();
+  // Pas de currentUser ni currentProfil → accès public uniquement
+}
+
+// Touche Entrée dans les champs splash
+document.addEventListener('DOMContentLoaded', () => {
+  ['splash-email','splash-password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') splashLogin(); });
+  });
+  document.getElementById('splash-email')?.focus();
+});
+
+// ── Animation photos défilantes ──────────────────────────────
+const _splashPhotos = [];    // URLs chargées
+let   _splashAnim   = null;  // handle requestAnimationFrame
+
+function splashStartPhotos(urls) {
+  const track = document.getElementById('splash-track');
+  const container = document.getElementById('splash-photos');
+  if (!track || !urls.length) return;
+
+  const W = container.offsetWidth || 500;
+  const H = 140;
+
+  // Créer les images avec positions et vitesses aléatoires
+  const items = urls.map((url, i) => {
+    const img = document.createElement('img');
+    img.className = 'sp-img';
+    img.src = url;
+    img.style.height = H + 'px';
+    const speed = 0.3 + Math.random() * 0.7; // px/frame
+    const x     = Math.random() * W * 2;      // position de départ étalée
+    img.style.left = x + 'px';
+    track.appendChild(img);
+    return { img, x, speed, w: 200 };         // w estimé avant chargement
+  });
+
+  // Mettre à jour la largeur réelle après chargement
+  items.forEach(it => {
+    it.img.onload = () => { it.w = it.img.naturalWidth * (H / it.img.naturalHeight); };
+  });
+
+  function animate() {
+    const totalW = W * 3; // zone de recirculation
+    items.forEach(it => {
+      it.x += it.speed;
+      if (it.x > totalW) it.x = -it.w;
+      it.img.style.left = it.x + 'px';
+    });
+    _splashAnim = requestAnimationFrame(animate);
+  }
+  _splashAnim = requestAnimationFrame(animate);
+}
+
+async function splashLoadPhotos() {
+  try {
+    const evts = await sbFetch(sbUrl('evenements',
+      '?select=photo&not.photo=is.null&photo=neq.&limit=30'));
+    if (!evts?.length) return;
+    const urls = evts.map(e => e.photo).filter(Boolean);
+    if (urls.length) splashStartPhotos(urls);
+  } catch(e) { console.warn('[splash photos]', e.message); }
+}
+
+
 // ── Chargement au démarrage ───────────────────────────────────
 (async function init() {
+  // Charger les photos pour l'écran de connexion
+  splashLoadPhotos();
   // 1. Charger la config depuis Supabase (paramètres LOD, admin, etc.)
   await loadAppConfig();
   // 2. Charger le catalogue et restaurer la dernière vue
@@ -6781,7 +7082,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.32</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.35</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
