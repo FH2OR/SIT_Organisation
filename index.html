@@ -1510,10 +1510,11 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.41 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.42 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
+  <div id="z1-welcome" style="display:none;font-size:11px;color:var(--text-mid);line-height:1.4;padding:0 4px"></div>
   <div id="z1-right">
     <button class="btn-save-load" id="btn-measure" onclick="toggleMeasureMode()" title="Mesurer une durée entre deux dates (cliquer deux points sur la frise)">
       📐 Mesurer
@@ -6521,6 +6522,8 @@ async function authLogout() {
   state.selected  = null;
   buildFA();
   render();
+  const wel = document.getElementById('z1-welcome');
+  if (wel) wel.style.display = 'none';
   updateAuthUI();
   closeAuthModal();
   // Recharger le catalogue en mode public (sans token)
@@ -6565,6 +6568,9 @@ async function onLoginSuccess(authData) {
     await authLogout();
     return;
   }
+
+  // Message de bienvenue abonné
+  showWelcomeMessage();
 
   // Recharger le catalogue avec les droits de l'utilisateur
   // et restaurer la dernière sauvegarde automatique
@@ -7050,7 +7056,52 @@ async function splashLoadPhotos() {
 }
 
 
-// ── Chargement au démarrage ───────────────────────────────────
+// ── Message de bienvenue abonné ───────────────────────────────
+async function showWelcomeMessage() {
+  const el = document.getElementById('z1-welcome');
+  if (!el || !currentProfil || !isAbonne()) { if (el) el.style.display = 'none'; return; }
+
+  const username = currentProfil.username || currentProfil.prenom || '?';
+
+  // Calcul jours depuis dernière connexion
+  let joursSep = null;
+  if (currentUser?.last_sign_in_at) {
+    const last  = new Date(currentUser.last_sign_in_at);
+    const today = new Date();
+    joursSep = Math.floor((today - last) / (1000 * 60 * 60 * 24));
+  }
+
+  const ligneBonjour = joursSep !== null && joursSep > 0
+    ? `👋 Bonjour <strong>${username}</strong>. Voilà <strong>${joursSep} jour${joursSep > 1 ? 's' : ''}</strong> que nous nous sommes rencontrés.`
+    : `👋 Bonjour <strong>${username}</strong>. Bienvenue !`;
+
+  // Choisir un événement ponctuel aléatoire avec une date
+  let ligneSavoir = '';
+  try {
+    const evts = await sbFetch(sbUrl('evenements',
+      `?type=eq.point&select=titre,date_debut&not.date_debut=is.null&limit=100`));
+    if (evts && evts.length > 0) {
+      const evt = evts[Math.floor(Math.random() * evts.length)];
+      if (evt.date_debut) {
+        const evtDate  = new Date(evt.date_debut);
+        const today    = new Date();
+        const diffDays = Math.floor((today - evtDate) / (1000 * 60 * 60 * 24));
+        if (!isNaN(diffDays) && diffDays > 0) {
+          const diffAns  = Math.floor(diffDays / 365);
+          const duree    = diffAns > 1
+            ? `<strong>${diffAns} ans</strong> (${diffDays.toLocaleString('fr-FR')} jours)`
+            : `<strong>${diffDays} jours</strong>`;
+          ligneSavoir = `💡 Savais-tu qu'il s'est passé ${duree} entre <em>${evt.titre}</em> et aujourd'hui ?`;
+        }
+      }
+    }
+  } catch(e) { console.warn('[welcome]', e.message); }
+
+  el.innerHTML = ligneBonjour + (ligneSavoir ? '<br>' + ligneSavoir : '');
+  el.style.display = 'block';
+}
+
+
 (async function init() {
   // Charger les photos pour l'écran de connexion
   splashLoadPhotos();
@@ -7093,7 +7144,7 @@ async function splashLoadPhotos() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.41 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.42 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
