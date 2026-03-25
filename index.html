@@ -1510,7 +1510,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.42 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.43 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -7059,7 +7059,13 @@ async function splashLoadPhotos() {
 // ── Message de bienvenue abonné ───────────────────────────────
 async function showWelcomeMessage() {
   const el = document.getElementById('z1-welcome');
-  if (!el || !currentProfil || !isAbonne()) { if (el) el.style.display = 'none'; return; }
+  if (!el) return;
+
+  console.log('[welcome] currentProfil:', currentProfil);
+  console.log('[welcome] isAbonne:', isAbonne(), 'role:', userRole());
+
+  // Afficher pour tous les connectés (abonné + superuser)
+  if (!currentProfil) { el.style.display = 'none'; return; }
 
   const username = currentProfil.username || currentProfil.prenom || '?';
 
@@ -7069,6 +7075,7 @@ async function showWelcomeMessage() {
     const last  = new Date(currentUser.last_sign_in_at);
     const today = new Date();
     joursSep = Math.floor((today - last) / (1000 * 60 * 60 * 24));
+    console.log('[welcome] last_sign_in_at:', currentUser.last_sign_in_at, '→', joursSep, 'jours');
   }
 
   const ligneBonjour = joursSep !== null && joursSep > 0
@@ -7079,7 +7086,8 @@ async function showWelcomeMessage() {
   let ligneSavoir = '';
   try {
     const evts = await sbFetch(sbUrl('evenements',
-      `?type=eq.point&select=titre,date_debut&not.date_debut=is.null&limit=100`));
+      `?type=eq.point&select=titre,date_debut&date_debut=not.is.null&limit=100`));
+    console.log('[welcome] events:', evts?.length);
     if (evts && evts.length > 0) {
       const evt = evts[Math.floor(Math.random() * evts.length)];
       if (evt.date_debut) {
@@ -7087,8 +7095,8 @@ async function showWelcomeMessage() {
         const today    = new Date();
         const diffDays = Math.floor((today - evtDate) / (1000 * 60 * 60 * 24));
         if (!isNaN(diffDays) && diffDays > 0) {
-          const diffAns  = Math.floor(diffDays / 365);
-          const duree    = diffAns > 1
+          const diffAns = Math.floor(diffDays / 365);
+          const duree   = diffAns > 1
             ? `<strong>${diffAns} ans</strong> (${diffDays.toLocaleString('fr-FR')} jours)`
             : `<strong>${diffDays} jours</strong>`;
           ligneSavoir = `💡 Savais-tu qu'il s'est passé ${duree} entre <em>${evt.titre}</em> et aujourd'hui ?`;
@@ -7099,6 +7107,7 @@ async function showWelcomeMessage() {
 
   el.innerHTML = ligneBonjour + (ligneSavoir ? '<br>' + ligneSavoir : '');
   el.style.display = 'block';
+  console.log('[welcome] affiché:', el.innerHTML.slice(0, 80));
 }
 
 
@@ -7144,7 +7153,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.42 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.43 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
