@@ -1510,7 +1510,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.35</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.36</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -7031,9 +7031,10 @@ function splashStartPhotos(urls) {
 async function splashLoadPhotos() {
   try {
     const evts = await sbFetch(sbUrl('evenements',
-      '?select=photo&not.photo=is.null&photo=neq.&limit=30'));
-    if (!evts?.length) return;
-    const urls = evts.map(e => e.photo).filter(Boolean);
+      '?select=photo&photo=not.is.null&photo=neq.&limit=30'));
+    if (!evts?.length) { console.log('[splash] aucune photo trouvée'); return; }
+    const urls = [...new Set(evts.map(e => e.photo).filter(u => u && u.startsWith('http')))];
+    console.log('[splash] photos:', urls.length, urls[0]);
     if (urls.length) splashStartPhotos(urls);
   } catch(e) { console.warn('[splash photos]', e.message); }
 }
@@ -7082,7 +7083,7 @@ async function splashLoadPhotos() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.35</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.36</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
