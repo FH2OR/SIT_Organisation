@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.27</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.28</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -5472,6 +5472,7 @@ async function dbLoad(id, nom) {
 
     buildFA();
     render();
+    buildCatalogueList(document.getElementById('cat-search')?.value || '');
     dbSetStatus(`✓ Vue "${save.nom}" chargée`, 'ok');
   } catch (err) {
     dbSetStatus('❌ ' + err.message, 'err');
@@ -6771,7 +6772,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.27</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.28</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
