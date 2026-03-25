@@ -1510,7 +1510,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.39</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.40</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6996,41 +6996,42 @@ function splashStartPhotos(urls) {
   if (!track || !urls.length) return;
 
   const H = 140;
-  // Dupliquer les URLs pour un défilement sans rupture
-  const allUrls = [...urls, ...urls, ...urls];
+  const W = container.offsetWidth || 620;
+  const GAP = 24;
 
-  // Créer toutes les images côte à côte dans le track
-  track.style.cssText = 'position:absolute;top:0;left:0;display:flex;flex-direction:row;';
-  allUrls.forEach(url => {
+  // Remettre le track en position absolue
+  track.style.cssText = 'position:absolute;top:0;left:0;';
+
+  // Créer les images avec position et vitesse aléatoires
+  // On étale les images sur 2× la largeur pour qu'il y en ait toujours à l'écran
+  const items = [];
+  urls.forEach((url, i) => {
     const img = document.createElement('img');
     img.src = url;
-    img.style.cssText = `height:${H}px;width:auto;object-fit:cover;opacity:0.8;flex-shrink:0;margin-right:16px;`;
+    img.style.cssText = `position:absolute;top:0;height:${H}px;width:auto;object-fit:cover;opacity:0.8;`;
     track.appendChild(img);
+    const item = {
+      img,
+      x: (i / urls.length) * W * 1.5 - W * 0.2,  // étalé de -20% à +130% de W
+      speed: 0.3 + Math.random() * 0.7,             // vitesses différentes
+      w: 0
+    };
+    img.onload = () => { item.w = img.naturalWidth * (H / img.naturalHeight) || 200; };
+    img.onerror = () => { item.w = 200; };
+    setTimeout(() => { if (!item.w) item.w = 200; }, 500);
+    items.push(item);
   });
 
-  // Attendre que les images chargent pour mesurer la largeur totale
-  let started = false;
-  function startScroll() {
-    if (started) return;
-    started = true;
-    const totalW = track.scrollWidth;
-    const W      = container.offsetWidth || 620;
-    let x = 0;
-    const SPEED = 0.6;
-    function animate() {
-      x += SPEED;
-      // Remettre au début quand on a parcouru 1/3 (un set complet)
-      if (x >= totalW / 3) x = 0;
-      track.style.transform = `translateX(${-x}px)`;
-      _splashAnim = requestAnimationFrame(animate);
-    }
+  function animate() {
+    items.forEach(it => {
+      it.x += it.speed;
+      // Quand l'image sort à droite → elle revient par la gauche
+      if (it.x > W + GAP) it.x = -(it.w || 200) - GAP;
+      it.img.style.left = Math.round(it.x) + 'px';
+    });
     _splashAnim = requestAnimationFrame(animate);
   }
-
-  // Démarrer après un délai pour laisser les images charger
-  setTimeout(startScroll, 800);
-  // Fallback si images déjà en cache
-  if (track.children.length > 0) setTimeout(startScroll, 100);
+  _splashAnim = requestAnimationFrame(animate);
 }
 
 async function splashLoadPhotos() {
@@ -7088,7 +7089,7 @@ async function splashLoadPhotos() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.39</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.40</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
