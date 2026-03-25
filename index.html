@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.28</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.29</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -5440,7 +5440,9 @@ async function dbSave() {
 async function dbLoad(id, nom) {
   dbSetStatus('Chargement…');
   try {
-    const data = await sbFetch(sbUrl('frises_saves', `?id=eq.${id}&select=id,nom,donnees`));
+    // Filtrer par user_id pour sécurité
+    const userFilter = currentUser ? `&user_id=eq.${currentUser.id}` : '';
+    const data = await sbFetch(sbUrl('frises_saves', `?id=eq.${id}${userFilter}&select=id,nom,donnees`));
     if (!data?.length) throw new Error('Vue introuvable');
     const save = data[0];
     dbCurrentId = save.id;
@@ -5485,7 +5487,8 @@ async function dbLoadList() {
   const listEl = document.getElementById('db-saves-list');
   listEl.innerHTML = '<div class="db-empty">Chargement…</div>';
   try {
-    const saves = await sbFetch(sbUrl('frises_saves', '?select=id,nom,updated_at&order=updated_at.desc'));
+    const userFilter = currentUser ? `?user_id=eq.${currentUser.id}&` : '?';
+    const saves = await sbFetch(sbUrl('frises_saves', `${userFilter}select=id,nom,updated_at&order=updated_at.desc`));
     if (!saves?.length) {
       listEl.innerHTML = '<div class="db-empty">Aucune vue sauvegardée</div>'; return;
     }
@@ -6372,6 +6375,9 @@ async function onLoginSuccess(authData) {
     `?nom=eq.__auto__&user_id=eq.${currentUser.id}&select=id,nom&order=updated_at.desc&limit=1`)).catch(() => null);
   if (autoSave && autoSave.length > 0) {
     await dbLoad(autoSave[0].id, autoSave[0].nom);
+  } else {
+    // Pas de sauvegarde : canvas vide, catalogue à jour
+    buildCatalogueList(document.getElementById('cat-search')?.value || '');
   }
 }
 
@@ -6772,7 +6778,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.28</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.29</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
