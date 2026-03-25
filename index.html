@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.26</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.27</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6312,6 +6312,11 @@ async function authLogout() {
   authToken     = null;
   currentUser   = null;
   currentProfil = null;
+  // Vider le canvas — ne pas garder les rubriques du compte précédent
+  state.timelines = [];
+  state.selected  = null;
+  buildFA();
+  render();
   updateAuthUI();
   closeAuthModal();
   // Recharger le catalogue en mode public (sans token)
@@ -6355,6 +6360,12 @@ async function onLoginSuccess(authData) {
 
   // Recharger le catalogue avec les droits de l'utilisateur
   // et restaurer la dernière sauvegarde automatique
+  // Vider d'abord le canvas pour ne pas garder les données du compte précédent
+  state.timelines = [];
+  state.selected  = null;
+  buildFA();
+  render();
+
   await dbPullCatalogue();
   const autoSave = await sbFetch(sbUrl('frises_saves',
     `?nom=eq.__auto__&user_id=eq.${currentUser.id}&select=id,nom&order=updated_at.desc&limit=1`)).catch(() => null);
@@ -6760,7 +6771,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.26</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.27</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
