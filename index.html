@@ -1510,7 +1510,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.36</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.38</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6991,38 +6991,66 @@ const _splashPhotos = [];    // URLs chargées
 let   _splashAnim   = null;  // handle requestAnimationFrame
 
 function splashStartPhotos(urls) {
-  const track = document.getElementById('splash-track');
+  const track     = document.getElementById('splash-track');
   const container = document.getElementById('splash-photos');
   if (!track || !urls.length) return;
 
-  const W = container.offsetWidth || 500;
-  const H = 140;
+  const H    = 140;
+  const W    = container.offsetWidth || 620;
+  const GAP  = 20;   // espace entre images
+  let   pool = [...urls]; // copie pour cycler
 
-  // Créer les images avec positions et vitesses aléatoires
-  const items = urls.map((url, i) => {
+  // File d'images actives : { img, x, w }
+  const active = [];
+  let   nextUrl = 0;
+  let   nextX   = 0;  // position X d'entrée de la prochaine image
+
+  function addImage() {
+    const url = pool[nextUrl % pool.length];
+    nextUrl++;
     const img = document.createElement('img');
-    img.className = 'sp-img';
+    img.style.cssText = `position:absolute;top:0;height:${H}px;opacity:0.8;`;
     img.src = url;
-    img.style.height = H + 'px';
-    const speed = 0.3 + Math.random() * 0.7; // px/frame
-    const x     = Math.random() * W * 2;      // position de départ étalée
-    img.style.left = x + 'px';
     track.appendChild(img);
-    return { img, x, speed, w: 200 };         // w estimé avant chargement
-  });
+    const item = { img, x: nextX, w: 0 };
+    active.push(item);
+    img.onload = () => {
+      item.w = img.naturalWidth * (H / img.naturalHeight) || 200;
+      nextX  = item.x + item.w + GAP;
+    };
+    img.onerror = () => { item.w = 200; nextX = item.x + item.w + GAP; };
+    // Estimation avant chargement
+    setTimeout(() => { if (!item.w) { item.w = 200; nextX = item.x + item.w + GAP; } }, 300);
+    return item;
+  }
 
-  // Mettre à jour la largeur réelle après chargement
-  items.forEach(it => {
-    it.img.onload = () => { it.w = it.img.naturalWidth * (H / it.img.naturalHeight); };
-  });
+  // Amorcer avec assez d'images pour couvrir la largeur + une de réserve
+  nextX = -W * 0.5; // commencer légèrement hors écran gauche
+  while (nextX < W + 300) addImage();
+
+  const SPEED = 0.8; // px/frame
 
   function animate() {
-    const totalW = W * 3; // zone de recirculation
-    items.forEach(it => {
-      it.x += it.speed;
-      if (it.x > totalW) it.x = -it.w;
-      it.img.style.left = it.x + 'px';
+    active.forEach(it => {
+      it.x += SPEED;
+      it.img.style.left = Math.round(it.x) + 'px';
     });
+
+    // Supprimer les images sorties à droite
+    for (let i = active.length - 1; i >= 0; i--) {
+      if (active[i].x > W + 10) {
+        active[i].img.remove();
+        active.splice(i, 1);
+      }
+    }
+
+    // Ajouter une nouvelle image quand la dernière est assez avancée
+    const last = active[active.length - 1];
+    if (last && (last.x + (last.w || 200) + GAP) < W + 200) {
+      nextX = last.x + (last.w || 200) + GAP;
+      addImage();
+    }
+
     _splashAnim = requestAnimationFrame(animate);
   }
   _splashAnim = requestAnimationFrame(animate);
@@ -7083,7 +7111,7 @@ async function splashLoadPhotos() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.36</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.38</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
