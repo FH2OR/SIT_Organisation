@@ -1510,15 +1510,11 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.40</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.41</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
   <div id="z1-right">
-    <!-- Bouton auth -->
-    <button id="btn-auth" onclick="openAuthModal()" title="Connexion / Inscription">
-      👤 Connexion
-    </button>
     <button class="btn-save-load" id="btn-measure" onclick="toggleMeasureMode()" title="Mesurer une durée entre deux dates (cliquer deux points sur la frise)">
       📐 Mesurer
     </button>
@@ -1527,6 +1523,14 @@
     <button id="btn-fs" onclick="toggleFullscreen()" title="Plein écran">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg>
     </button>
+    <button id="btn-quit" onclick="window.close()" title="Quitter l'application"
+      style="background:rgba(231,76,60,0.10);border:1px solid rgba(231,76,60,0.35);color:#e74c3c;
+             border-radius:4px;font-size:12px;padding:4px 10px;cursor:pointer;
+             font-family:'Source Sans 3',sans-serif;">
+      Quitter
+    </button>
+    <!-- btn-auth caché — conservé pour compatibilité JS -->
+    <button id="btn-auth" style="display:none"></button>
   </div>
 </div>
 
@@ -7089,7 +7093,7 @@ async function splashLoadPhotos() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.40</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.41</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
