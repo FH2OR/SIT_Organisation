@@ -6550,6 +6550,8 @@ async function onLoginSuccess(authData) {
     const profils = await sbFetch(sbUrl('profils', `?id=eq.${currentUser.id}&select=*`));
     currentProfil = profils?.[0] || null;
     console.log('[auth] profil chargé:', currentProfil);
+    console.log('[auth] user.id:', currentUser.id);
+    console.log('[auth] profils raw:', profils);
   } catch(e) {
     console.warn('[auth] échec chargement profil:', e.message);
     currentProfil = null;
