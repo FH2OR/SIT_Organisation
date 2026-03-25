@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.30</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.31</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6387,10 +6387,7 @@ function updateAuthUI() {
   if (currentProfil) {
     const abbrev     = currentProfil.abonnement === 'abonne' ? '⭐' : '';
     const adminBadge = isAdmin() ? ' 🔧' : '';
-    const displayName = (currentProfil.prenom && currentProfil.prenom !== 'Non renseigné')
-      ? currentProfil.prenom
-      : currentProfil.username || 'Utilisateur';
-    btn.textContent = `👤 ${displayName}${abbrev}${adminBadge}`;
+    btn.textContent = `👤 ${currentProfil.username}${abbrev}${adminBadge}`;
     btn.classList.add('connected');
     if (isAdmin()) btn.title = 'Connecté — Mode administrateur actif (clic droit sur un événement pour modifier son importance)';
     // Panneau profil
@@ -6781,7 +6778,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.30</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.31</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
