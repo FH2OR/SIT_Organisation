@@ -1314,7 +1314,7 @@
 <!-- Z1 -->
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.31</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.32</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -6346,7 +6346,11 @@ async function onLoginSuccess(authData) {
   try {
     const profils = await sbFetch(sbUrl('profils', `?id=eq.${currentUser.id}&select=*`));
     currentProfil = profils?.[0] || null;
-  } catch(_) { currentProfil = null; }
+    console.log('[auth] profil chargé:', currentProfil);
+  } catch(e) {
+    console.warn('[auth] échec chargement profil:', e.message);
+    currentProfil = null;
+  }
 
   updateAuthUI();
 
@@ -6389,7 +6393,6 @@ function updateAuthUI() {
     const adminBadge = isAdmin() ? ' 🔧' : '';
     btn.textContent = `👤 ${currentProfil.username}${abbrev}${adminBadge}`;
     btn.classList.add('connected');
-    if (isAdmin()) btn.title = 'Connecté — Mode administrateur actif (clic droit sur un événement pour modifier son importance)';
     // Panneau profil
     document.getElementById('profile-name').textContent =
       `${currentProfil.prenom} ${currentProfil.nom}`;
@@ -6778,7 +6781,7 @@ resize();
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.31</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.32</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
