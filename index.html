@@ -1350,16 +1350,15 @@
   top: 0;
   opacity: 0.75;
 }
-#splash-logo {
-  position: absolute;
-  inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px; font-weight: 700;
-  color: rgba(200,169,110,0.9);
-  letter-spacing: .08em;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.8);
-  pointer-events: none;
-  z-index: 2;
+#splash-title {
+  background: #060c18;
+  color: rgba(200,169,110,0.95);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #1a2840;
 }
 
 /* ── Formulaire ── */
@@ -1481,10 +1480,12 @@
 <div id="splash-overlay">
   <div id="splash-box">
 
+    <!-- Titre au-dessus des photos -->
+    <div id="splash-title">S.I.T. — Système d'Information Temporel</div>
+
     <!-- Zone photos défilantes -->
     <div id="splash-photos">
       <div id="splash-track"></div>
-      <div id="splash-logo">⏳ S.I.T.</div>
     </div>
 
     <!-- Zone saisie -->
