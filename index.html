@@ -4227,7 +4227,7 @@ function buildFA() {
       </div>
       <div class="tl-count">${totalEvts}</div>
       <button class="tl-add-sub-btn" title="Ajouter une sous-rubrique">＋</button>
-      <button class="tl-zoom-btn" title="Zoomer sur cette rubrique">⌖</button>
+      <button class="tl-zoom-btn" title="Zoomer sur cette rubrique">◀▶</button>
       <button class="tl-del-btn" title="Supprimer cette rubrique et ses événements">🗑</button>
     `;
     el.addEventListener('click', e => {
@@ -4419,7 +4419,7 @@ function buildFA() {
         <div class="tl-checkbox${sub.enabled && parentEnabled?' checked':''}" style="border-color:${sub.color};background:${sub.enabled && parentEnabled?sub.color:'transparent'}"></div>
         <div class="tl-label" style="color:${sub.color}">${typeIcon} ${sub.title}</div>
         <div class="tl-count">${sub.events.length}</div>
-        <button class="tl-zoom-btn" title="Zoomer sur cette sous-rubrique">⌖</button>
+        <button class="tl-zoom-btn" title="Zoomer sur cette sous-rubrique">◀▶</button>
         <button class="tl-del-btn" title="Supprimer cette sous-rubrique">🗑</button>
       `;
       if (parentEnabled) {
