@@ -304,6 +304,120 @@
   #up-msg.ok  { display: block; background: rgba(82,183,136,0.12); color: #52b788; }
   #up-msg.err { display: block; background: rgba(231,76,60,0.10); color: #e74c3c; }
 
+  /* ── Recherches dans le bandeau ─────────────────────────────── */
+  .srch-wrap {
+    position: relative;
+    display: flex; align-items: center;
+    flex-shrink: 0;
+  }
+  .srch-input {
+    height: 30px; padding: 0 28px 0 9px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text); font-size: 12px;
+    font-family: 'Source Sans 3', sans-serif;
+    outline: none; transition: border-color .15s, width .2s;
+    width: 140px;
+  }
+  .srch-input:focus { border-color: var(--accent); width: 200px; }
+  .srch-input::placeholder { color: var(--text-dim); }
+  .srch-ico {
+    position: absolute; right: 7px;
+    font-size: 13px; color: var(--text-dim);
+    pointer-events: none;
+  }
+  .srch-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+    position: absolute; top: -14px; left: 2px;
+    white-space: nowrap;
+  }
+
+  /* ── Fenêtre résultats recherche globale ─────────────────────── */
+  #search-global-panel {
+    display: none; position: fixed; z-index: 850;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent2);
+    border-radius: 8px;
+    width: 480px; max-width: 95vw;
+    max-height: 60vh;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    font-family: 'Source Sans 3', sans-serif;
+    overflow: hidden;
+    display: none; flex-direction: column;
+  }
+  #search-global-panel.open { display: flex; }
+  #sgp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px 9px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #sgp-header .sgp-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--accent2); letter-spacing: .5px;
+  }
+  #sgp-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 16px; cursor: pointer; padding: 0; line-height: 1;
+  }
+  #sgp-close:hover { color: var(--text); }
+  #sgp-list {
+    overflow-y: auto; flex: 1; padding: 4px 0;
+  }
+  #sgp-list::-webkit-scrollbar { width: 4px; }
+  #sgp-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .sgp-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background .1s;
+  }
+  .sgp-row:last-child { border-bottom: none; }
+  .sgp-row:hover { background: rgba(255,255,255,0.04); }
+  .sgp-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sgp-info { flex: 1; min-width: 0; }
+  .sgp-evt-title {
+    font-size: 13px; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sgp-rub-title {
+    font-size: 11px; color: var(--text-dim); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sgp-date {
+    font-size: 11px; color: var(--text-dim);
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .sgp-btn {
+    flex-shrink: 0; font-size: 11px; padding: 3px 9px;
+    border-radius: 3px; cursor: pointer;
+    font-family: 'Source Sans 3', sans-serif;
+    transition: all .15s; white-space: nowrap;
+  }
+  .sgp-btn-load {
+    background: rgba(212,176,122,0.12);
+    border: 1px solid rgba(212,176,122,0.4);
+    color: var(--accent);
+  }
+  .sgp-btn-load:hover { background: rgba(212,176,122,0.25); }
+  .sgp-btn-done {
+    background: rgba(82,183,136,0.08);
+    border: 1px solid rgba(82,183,136,0.25);
+    color: #52b788; cursor: default;
+  }
+  #sgp-empty {
+    padding: 20px; text-align: center;
+    font-size: 13px; color: var(--text-dim);
+  }
+
   /* ── Modale auth ─────────────────────────────────────────── */
   #auth-modal-overlay {
     display: none; position: fixed; inset: 0; z-index: 600;
@@ -1841,6 +1955,22 @@
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
   <div id="z1-welcome" style="display:none;font-size:14px;color:var(--text-mid);line-height:1.4;padding:0 4px"></div>
   <div id="z1-right">
+    <!-- Recherche dans le canvas -->
+    <div class="srch-wrap" style="margin-top:14px">
+      <span class="srch-label">Canvas</span>
+      <input class="srch-input" id="srch-canvas" type="text" placeholder="🔍 Chercher…"
+             oninput="searchCanvas(this.value)" onkeydown="if(e.key==='Escape')this.value=''&&searchCanvas('')"
+             title="Recherche dans les rubriques et événements chargés">
+      <span class="srch-ico">⌕</span>
+    </div>
+    <!-- Recherche globale -->
+    <div class="srch-wrap" style="margin-top:14px">
+      <span class="srch-label">Global</span>
+      <input class="srch-input" id="srch-global" type="text" placeholder="🔍 Chercher…"
+             onkeydown="if(event.key==='Enter')searchGlobal(this.value)"
+             title="Recherche dans tous les événements Supabase (Entrée pour lancer)">
+      <span class="srch-ico">⌕</span>
+    </div>
     <button class="btn-save-load" id="btn-measure" onclick="toggleMeasureMode()" title="Mesurer une durée entre deux dates (cliquer deux points sur la frise)">
       📐 Mesurer
     </button>
@@ -1978,6 +2108,14 @@
   </div>
 </div>
 <div id="admin-importance-popup">
+<!-- ── Fenêtre résultats recherche globale ── -->
+<div id="search-global-panel">
+  <div id="sgp-header">
+    <span class="sgp-title">🔍 Résultats — recherche globale</span>
+    <button id="sgp-close" onclick="closeSearchGlobal()">✕</button>
+  </div>
+  <div id="sgp-list"></div>
+</div>
   <h5>⚙️ Admin — Importance</h5>
   <div id="admin-imp-title"></div>
   <div class="admin-imp-row">
@@ -3525,6 +3663,7 @@ function ellipsis(ctx, text, maxWidth) {
 function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = true) {
   const isHov = state.hovered  && state.hovered.evt.id  === evt.id && state.hovered.tl.id  === tl.id;
   const isSel = state.selected && state.selected.evt.id === evt.id && state.selected.tl.id === tl.id;
+  const isHit = !!evt._srchHit;  // résultat recherche canvas
   const baseCol = evt.color || tl.color;
   // Alternance adaptée à la luminosité de la couleur
   const col = (evt.type === 'range' && altMap && altMap.get(evt.id) === 1)
@@ -3560,10 +3699,14 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     if (isFuture) {
       // ── Entièrement futur : contour pointillé, pas de fond ──
       ctx.strokeStyle = hexToRgba(col, isHov || isSel ? 0.9 : 0.6);
-      ctx.lineWidth = isSel ? 2 : 1.5;
+      ctx.lineWidth = isSel ? 2 : isHit ? 2 : 1.5;
       ctx.setLineDash([4, 4]);
       roundRect(ctx, cx1, top, cw, h, 3); ctx.stroke();
       ctx.setLineDash([]);
+      if (isHit && !isHov && !isSel) {
+        ctx.strokeStyle = '#f0c040'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+        roundRect(ctx, cx1 - 2, top - 2, cw + 4, h + 4, 4); ctx.stroke();
+      }
     } else if (isCurrent) {
       // ── Chevauche aujourd'hui : partie passée normale, partie future pointillée ──
       const nowClamped = Math.max(cx1, Math.min(nowX, cx2));
@@ -3656,12 +3799,20 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     if (x < -20 || x > W + 20) return;
 
     const baseR = Math.min(evt.symbolSize || PT_R, Math.floor(rowH / 2) - 1);
-    const r = baseR + (isHov || isSel ? 2 : 0);
+    const r = baseR + (isHov || isSel ? 2 : isHit ? 1 : 0);
 
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
     const ptY = cy; // centre de la piste
+
+    // Halo recherche canvas
+    if (isHit && !isHov && !isSel) {
+      ctx.strokeStyle = '#f0c040';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(x, ptY, r + 4, 0, Math.PI * 2); ctx.stroke();
+    }
 
     // Halo hover/sélection
     if (isHov || isSel) {
@@ -7206,6 +7357,141 @@ async function upSetUserRole(uid, role) {
 }
 
 // ── Helpers messages ──────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════
+//  RECHERCHE
+// ═══════════════════════════════════════════════════════════════
+
+// ── 1. Recherche dans le canvas (rubriques + événements chargés) ──
+let _srchCanvasTimer = null;
+function searchCanvas(q) {
+  clearTimeout(_srchCanvasTimer);
+  _srchCanvasTimer = setTimeout(() => {
+    q = (q || '').trim().toLowerCase();
+    // Réinitialiser le highlight
+    state.timelines.forEach(tl => {
+      tl._srchHit = false;
+      tl.events.forEach(e => { e._srchHit = false; });
+    });
+    if (!q) { render(); return; }
+
+    let firstHit = null;
+    state.timelines.forEach(tl => {
+      if (tl.title.toLowerCase().includes(q)) { tl._srchHit = true; if (!firstHit) firstHit = { tl, evt: null }; }
+      tl.events.forEach(e => {
+        const inTitle   = (e.title   || '').toLowerCase().includes(q);
+        const inComment = (e.comment || '').toLowerCase().includes(q);
+        if (inTitle || inComment) {
+          e._srchHit = true;
+          tl._srchHit = true;
+          if (!firstHit) firstHit = { tl, evt: e };
+        }
+      });
+    });
+
+    render();
+
+    // Centrer sur le premier résultat
+    if (firstHit?.evt) {
+      const day = evtStartDays(firstHit.evt);
+      animateTo(day, state.scale);
+    }
+  }, 200);
+}
+
+// ── 2. Recherche globale Supabase ─────────────────────────────
+let _sgpResults = [];
+
+async function searchGlobal(q) {
+  q = (q || '').trim();
+  if (q.length < 2) return;
+
+  const panel = document.getElementById('search-global-panel');
+  const list  = document.getElementById('sgp-list');
+  list.innerHTML = '<div id="sgp-empty">Recherche en cours…</div>';
+  // Positionner sous le champ
+  const inp  = document.getElementById('srch-global');
+  const rect = inp.getBoundingClientRect();
+  panel.style.top   = (rect.bottom + 6) + 'px';
+  panel.style.right = (window.innerWidth - rect.right) + 'px';
+  panel.classList.add('open');
+
+  try {
+    // Recherche dans événements (titre + commentaire) via ilike
+    const qEnc = encodeURIComponent(`%${q}%`);
+    const evts = await sbFetch(sbUrl('evenements',
+      `?select=id,titre,commentaire,date_debut,rubrique_id,couleur&or=(titre.ilike.${qEnc},commentaire.ilike.${qEnc})&limit=50`));
+
+    if (!evts || evts.length === 0) {
+      list.innerHTML = '<div id="sgp-empty">Aucun résultat trouvé.</div>';
+      return;
+    }
+
+    // Récupérer les rubriques concernées
+    const rubIds = [...new Set(evts.map(e => e.rubrique_id).filter(Boolean))];
+    const rubMap = {};
+    catalogueData.forEach(c => { rubMap[c.id] = c; });
+
+    list.innerHTML = '';
+    _sgpResults = evts;
+
+    evts.forEach(evt => {
+      const rubId  = evt.rubrique_id;
+      const cat    = rubMap[rubId];
+      const rubTitle = cat ? cat.title : (rubId || '—');
+      const parentCat = cat?.parentId ? rubMap[cat.parentId] : null;
+      const rubLabel = parentCat ? `${parentCat.title} › ${rubTitle}` : rubTitle;
+      const color  = evt.couleur || cat?.color || '#8ecae6';
+
+      // Déjà chargé ?
+      const alreadyLoaded = !!state.timelines.find(t => t.id === rubId && t.enabled);
+
+      const row = document.createElement('div');
+      row.className = 'sgp-row';
+
+      const dateStr = evt.date_debut ? String(evt.date_debut) : '';
+
+      row.innerHTML = `
+        <div class="sgp-dot" style="background:${color}"></div>
+        <div class="sgp-info">
+          <div class="sgp-evt-title">${evt.titre || '—'}</div>
+          <div class="sgp-rub-title">📂 ${rubLabel}</div>
+        </div>
+        <div class="sgp-date">${dateStr}</div>
+        ${alreadyLoaded
+          ? `<button class="sgp-btn sgp-btn-done" disabled>✓ Chargé</button>`
+          : cat
+            ? `<button class="sgp-btn sgp-btn-load" onclick="sgpLoad('${rubId}')">＋ Charger</button>`
+            : `<span style="font-size:11px;color:var(--text-dim)">—</span>`
+        }`;
+      list.appendChild(row);
+    });
+
+  } catch(e) {
+    list.innerHTML = `<div id="sgp-empty">Erreur : ${e.message}</div>`;
+  }
+}
+
+function sgpLoad(rubId) {
+  addFromCatalogue(rubId);
+  buildFA();
+  render();
+  // Mettre à jour le bouton dans la liste
+  const panel = document.getElementById('sgp-list');
+  panel.querySelectorAll('.sgp-btn-load').forEach(btn => {
+    if (btn.getAttribute('onclick') === `sgpLoad('${rubId}')`) {
+      btn.className = 'sgp-btn sgp-btn-done';
+      btn.disabled  = true;
+      btn.textContent = '✓ Chargé';
+      btn.removeAttribute('onclick');
+    }
+  });
+}
+
+function closeSearchGlobal() {
+  document.getElementById('search-global-panel').classList.remove('open');
+  document.getElementById('srch-global').value = '';
+}
 function showAuthMsg(el, msg, type) {
   el.textContent = msg;
   el.className   = 'auth-msg' + (type ? ' ' + type : '');
