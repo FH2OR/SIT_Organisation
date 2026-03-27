@@ -7499,17 +7499,56 @@ async function searchGlobal(q) {
   }
 }
 
-function sgpLoad(rubId, btn) {
+function sgpLoad(rubId, btn, evtTitre) {
   addFromCatalogue(rubId);
   buildFA();
   render();
-  // Mettre à jour le bouton immédiatement
+
+  // Mettre à jour le bouton
   if (btn) {
-    btn.className    = 'sgp-btn sgp-btn-done';
-    btn.disabled     = true;
-    btn.textContent  = '✓ Chargé';
+    btn.className   = 'sgp-btn sgp-btn-done';
+    btn.disabled    = true;
+    btn.textContent = '✓ Chargé';
     btn.removeAttribute('onclick');
   }
+
+  // Trouver l'événement correspondant dans la rubrique chargée et zoomer dessus
+  const q = normalizeStr(document.getElementById('srch-global')?.value || '');
+  if (!q) return;
+
+  // Chercher dans la timeline nouvellement chargée
+  const tl = state.timelines.find(t => String(t.id) === String(rubId));
+  if (!tl) return;
+
+  const hit = tl.events.find(e =>
+    normalizeStr(e.title).includes(q) || normalizeStr(e.comment).includes(q)
+  );
+  if (!hit) return;
+
+  const day = evtStartDays(hit);
+  const end = evtEndDays(hit);
+  const mid = (day + end) / 2;
+
+  // Zoom adapté : événement ponctuel → zoom fort, range → adapter à la durée
+  let targetScale;
+  if (hit.type === 'point') {
+    targetScale = Math.max(state.scale, 2);
+  } else {
+    const span = Math.abs(end - day) || 1;
+    const W = canvas.width;
+    targetScale = Math.min(W / span * 0.6, 50);
+    targetScale = Math.max(targetScale, 0.01);
+  }
+
+  // Fermer le panneau après un court délai puis animer
+  setTimeout(() => {
+    closeSearchGlobal();
+    animateTo(mid, targetScale);
+    // Sélectionner l'événement pour afficher son détail
+    state.selected = { evt: hit, tl };
+    render();
+    showFCDetail(hit, tl);
+  }, 300);
 }
 
 function closeSearchGlobal() {
