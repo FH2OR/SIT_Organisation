@@ -7703,35 +7703,29 @@ async function showWelcomeMessage() {
     ? `👋 Bonjour <strong>${username}</strong>. Voilà <strong>${joursSep} jour${joursSep > 1 ? 's' : ''}</strong> que nous nous sommes rencontrés.`
     : `👋 Bonjour <strong>${username}</strong>. Bienvenue !`;
 
-  // Choisir un événement ponctuel aléatoire avec une date
+  // Choisir un événement aléatoire avec une date
   let ligneSavoir = '';
   try {
     const evts = await sbFetch(sbUrl('evenements',
-      '?select=titre,date_debut,type&date_debut=not.is.null&limit=200'));
+      '?select=titre,date_debut&date_debut=not.is.null&limit=200'));
     if (evts && evts.length > 0) {
-      console.log('[welcome] premier evt brut:', evts[0]?.titre, '| date_debut type:', typeof evts[0]?.date_debut, '| valeur:', evts[0]?.date_debut);
       const valides = evts.filter(e => {
         if (!e.titre || !e.date_debut) return false;
-        let t = e.date_debut;
-        if (typeof t === 'string') { try { t = JSON.parse(t); } catch(_) { return false; } }
-        return Array.isArray(t) && t.length === 4 && !isNaN(t[1]);
+        const annee = parseInt(e.date_debut);
+        return !isNaN(annee) && annee > 0 && annee < new Date().getFullYear();
       });
       console.log('[welcome] événements valides:', valides.length);
       if (valides.length > 0) {
-        const evt      = valides[Math.floor(Math.random() * valides.length)];
-        let evtTuple = evt.date_debut;
-        if (typeof evtTuple === 'string') { try { evtTuple = JSON.parse(evtTuple); } catch(_) { evtTuple = null; } }
-        if (evtTuple) {
-          const todayTuple = [-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()];
-          const diffDays   = Math.floor(tupleToDays(todayTuple) - tupleToDays(evtTuple));
-          console.log('[welcome] evt:', evt.titre, 'tuple:', evtTuple, 'diffDays:', diffDays);
-          if (!isNaN(diffDays) && diffDays > 0) {
-            const diffAns = Math.floor(diffDays / 365);
-            const duree   = diffAns > 1
-              ? `<strong>${diffAns} ans</strong> (${diffDays.toLocaleString('fr-FR')} jours)`
-              : `<strong>${diffDays} jours</strong>`;
-            ligneSavoir = `💡 Savais-tu qu'il s'est passé ${duree} entre <em>${evt.titre}</em> et aujourd'hui ?`;
-          }
+        const evt    = valides[Math.floor(Math.random() * valides.length)];
+        const annee  = parseInt(evt.date_debut);
+        const anneeActuelle = new Date().getFullYear();
+        const diffAns = anneeActuelle - annee;
+        if (diffAns > 0) {
+          const diffDays = Math.round(diffAns * 365.25);
+          const duree = diffAns >= 2
+            ? `<strong>${diffAns} ans</strong> (${diffDays.toLocaleString('fr-FR')} jours)`
+            : `<strong>${diffDays} jours</strong>`;
+          ligneSavoir = `💡 Savais-tu qu'il s'est passé ${duree} entre <em>${evt.titre}</em> et aujourd'hui ?`;
         }
       }
     }
