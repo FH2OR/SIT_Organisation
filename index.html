@@ -1460,17 +1460,18 @@
 /* ── Logo gauche — carré de la hauteur totale ── */
 #splash-logo-col {
   flex-shrink: 0;
-  width: 252px;
+  width: 300px;
   background: #060c18;
   border-right: 1px solid #1a2840;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+  align-self: stretch;
 }
 #splash-logo-img {
-  width: 252px;
-  height: 252px;
-  object-fit: contain;
+  width: 300px;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
@@ -7127,6 +7128,7 @@ async function upSaveProfil() {
     currentProfil = { ...currentProfil, prenom, nom, username, date_naissance: ddn || null };
     updateAuthUI();
     upMsg('✅ Profil mis à jour.');
+    setTimeout(() => closeUserPanel(), 1800);
   } catch(e) { upMsg('❌ ' + e.message, 'err'); }
 }
 
@@ -7149,6 +7151,7 @@ async function upSavePassword() {
     document.getElementById('up-pwd1').value = '';
     document.getElementById('up-pwd2').value = '';
     upMsg('✅ Mot de passe modifié.');
+    setTimeout(() => closeUserPanel(), 1800);
   } catch(e) { upMsg('❌ ' + e.message, 'err'); }
 }
 
