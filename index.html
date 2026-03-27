@@ -1345,8 +1345,8 @@
   justify-content: center;
 }
 #splash-logo-img {
-  width: 200px;
-  height: 200px;
+  width: 184px;
+  height: 184px;
   object-fit: cover;
   display: block;
 }
@@ -1361,12 +1361,11 @@
 
 /* ── Photos défilantes ── */
 #splash-photos {
-  height: 156px;
+  height: 140px;
   background: #060c18;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
-  flex: 1;
 }
 #splash-track {
   display: flex;
@@ -7060,7 +7059,7 @@ function splashStartPhotos(urls) {
   const container = document.getElementById('splash-photos');
   if (!track || !urls.length) return;
 
-  const H = container.offsetHeight || 156;
+  const H = 140;
   const W = container.offsetWidth || 620;
   const GAP = 24;
 
