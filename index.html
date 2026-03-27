@@ -7428,14 +7428,11 @@ async function searchGlobal(q) {
 
   const inp  = document.getElementById('srch-global');
   const rect = inp.getBoundingClientRect();
-  const panelW = 480;
-  // Aligner à droite sur le champ, sans dépasser le bord gauche de l'écran
-  let leftPos = rect.right - panelW;
-  if (leftPos < 8) leftPos = 8;
+  // Ancrer le panneau à droite de l'écran, aligné sur le bord droit du champ
+  const rightOffset = window.innerWidth - rect.right;
   panel.style.top   = (rect.bottom + 6) + 'px';
-  panel.style.left  = leftPos + 'px';
-  panel.style.right = 'auto';
-  console.log('[searchGlobal] panel pos — top:', rect.bottom + 6, 'left:', leftPos, 'panel visible:', panel.classList.contains('open'));
+  panel.style.right = Math.max(0, rightOffset) + 'px';
+  panel.style.left  = 'auto';
   panel.classList.add('open');
 
   try {
@@ -7448,9 +7445,7 @@ async function searchGlobal(q) {
       sbUrl('evenements', '?select=id,titre,commentaire,date_debut,rubrique_id,couleur&order=titre.asc&limit=5000'),
       { headers }
     );
-    console.log('[searchGlobal] HTTP', res.status);
     const evts = res.ok ? await res.json() : [];
-    console.log('[searchGlobal] reçus:', evts?.length, '| ex:', evts?.[0]?.titre);
 
     if (!evts || evts.length === 0) {
       list.innerHTML = '<div id="sgp-empty">Aucun événement accessible.</div>';
@@ -7463,7 +7458,6 @@ async function searchGlobal(q) {
       normalizeStr(e.titre).includes(qNorm) ||
       normalizeStr(e.commentaire).includes(qNorm)
     );
-    console.log('[searchGlobal] filtrés:', found.length);
 
     if (found.length === 0) {
       list.innerHTML = `<div id="sgp-empty">Aucun résultat pour « ${q} ».</div>`;
@@ -7473,7 +7467,6 @@ async function searchGlobal(q) {
     const rubMap = {};
     catalogueData.forEach(c => { rubMap[c.id] = c; });
 
-    // Construire tout le HTML d'un coup pour éviter les conflits DOM
     const header = `<div style="padding:5px 14px 4px;font-size:10px;font-weight:700;
       text-transform:uppercase;letter-spacing:1px;color:var(--accent);
       background:var(--bg3);border-bottom:1px solid var(--border)">
@@ -7508,7 +7501,6 @@ async function searchGlobal(q) {
     }).join('');
 
     list.innerHTML = header + rows;
-    console.log('[searchGlobal] HTML injecté, rows:', found.length, 'list.children:', list.children.length);
 
   } catch(e) {
     list.innerHTML = `<div id="sgp-empty">Erreur : ${e.message}</div>`;
