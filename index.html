@@ -347,7 +347,7 @@
     box-shadow: 0 12px 40px rgba(0,0,0,.5);
     font-family: 'Source Sans 3', sans-serif;
     overflow: hidden;
-    display: none; flex-direction: column;
+    flex-direction: column;
   }
   #search-global-panel.open { display: flex; }
   #sgp-header {
@@ -7467,27 +7467,25 @@ async function searchGlobal(q) {
     const rubMap = {};
     catalogueData.forEach(c => { rubMap[c.id] = c; });
 
-    // En-tête compteur
-    list.innerHTML = `<div style="padding:5px 14px 4px;font-size:10px;font-weight:700;
+    // Construire tout le HTML d'un coup pour éviter les conflits DOM
+    const header = `<div style="padding:5px 14px 4px;font-size:10px;font-weight:700;
       text-transform:uppercase;letter-spacing:1px;color:var(--accent);
       background:var(--bg3);border-bottom:1px solid var(--border)">
       ${found.length} résultat${found.length > 1 ? 's' : ''} pour « ${q} »
     </div>`;
 
-    _sgpResults = found;
-    found.forEach(evt => {
+    const rows = found.map(evt => {
       const rubId     = evt.rubrique_id;
-      const cat       = rubMap[rubId];
+      const cat       = rubMap[rubId] || rubMap[String(rubId)] || rubMap[Number(rubId)];
       const rubTitle  = cat ? cat.title : (rubId || '—');
-      const parentCat = cat?.parentId ? rubMap[cat.parentId] : null;
+      const parentCat = cat?.parentId ? (rubMap[cat.parentId] || rubMap[String(cat.parentId)]) : null;
       const rubLabel  = parentCat ? `${parentCat.title} › ${rubTitle}` : rubTitle;
       const color     = evt.couleur || cat?.color || '#8ecae6';
       const dateStr   = evt.date_debut ? String(evt.date_debut) : '';
-      const alreadyLoaded = !!state.timelines.find(t => t.id === rubId && t.enabled);
+      const alreadyLoaded = !!state.timelines.find(t => String(t.id) === String(rubId) && t.enabled);
+      const loadId    = cat ? String(cat.id) : null;
 
-      const row = document.createElement('div');
-      row.className = 'sgp-row';
-      row.innerHTML = `
+      return `<div class="sgp-row">
         <div class="sgp-dot" style="background:${color}"></div>
         <div class="sgp-info">
           <div class="sgp-evt-title">${evt.titre || '—'}</div>
@@ -7496,12 +7494,15 @@ async function searchGlobal(q) {
         <div class="sgp-date">${dateStr}</div>
         ${alreadyLoaded
           ? `<button class="sgp-btn sgp-btn-done" disabled>✓ Chargé</button>`
-          : cat
-            ? `<button class="sgp-btn sgp-btn-load" onclick="sgpLoad('${rubId}', this)">＋ Charger</button>`
+          : loadId
+            ? `<button class="sgp-btn sgp-btn-load" onclick="sgpLoad('${loadId}', this)">＋ Charger</button>`
             : `<span style="font-size:11px;color:var(--text-dim)">—</span>`
-        }`;
-      list.appendChild(row);
-    });
+        }
+      </div>`;
+    }).join('');
+
+    list.innerHTML = header + rows;
+    console.log('[searchGlobal] HTML injecté, rows:', found.length, 'list.children:', list.children.length);
 
   } catch(e) {
     list.innerHTML = `<div id="sgp-empty">Erreur : ${e.message}</div>`;
