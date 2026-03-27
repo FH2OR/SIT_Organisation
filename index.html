@@ -7428,8 +7428,14 @@ async function searchGlobal(q) {
 
   const inp  = document.getElementById('srch-global');
   const rect = inp.getBoundingClientRect();
+  const panelW = 480;
+  // Aligner à droite sur le champ, sans dépasser le bord gauche de l'écran
+  let leftPos = rect.right - panelW;
+  if (leftPos < 8) leftPos = 8;
   panel.style.top   = (rect.bottom + 6) + 'px';
-  panel.style.right = (window.innerWidth - rect.right) + 'px';
+  panel.style.left  = leftPos + 'px';
+  panel.style.right = 'auto';
+  console.log('[searchGlobal] panel pos — top:', rect.bottom + 6, 'left:', leftPos, 'panel visible:', panel.classList.contains('open'));
   panel.classList.add('open');
 
   try {
