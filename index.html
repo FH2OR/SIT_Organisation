@@ -182,6 +182,128 @@
   }
   #btn-auth.connected:hover { background: rgba(82,183,136,0.2); border-color: #52b788; }
 
+  /* ── Bouton username bandeau ─────────────────────────────────── */
+  #btn-user {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+    height: 36px; padding: 0 13px;
+    border-radius: 4px; cursor: pointer;
+    font-size: 13px; font-family: 'Source Sans 3', sans-serif;
+    white-space: nowrap; transition: all .2s;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+  }
+  #btn-user:hover { background: var(--border); color: var(--text); }
+  #btn-user.connected {
+    background: rgba(82,183,136,0.1);
+    border-color: rgba(82,183,136,0.35);
+    color: #52b788;
+  }
+  #btn-user.connected:hover { background: rgba(82,183,136,0.2); border-color: #52b788; }
+
+  /* ── Panneau profil flottant ─────────────────────────────────── */
+  #user-panel {
+    display: none;
+    position: fixed;
+    z-index: 800;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    border-radius: 8px;
+    width: 320px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    font-family: 'Source Sans 3', sans-serif;
+    overflow: hidden;
+  }
+  #user-panel.open { display: block; }
+  #user-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 10px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  #user-panel-header .up-title {
+    font-family: 'Cinzel', serif; font-size: 13px;
+    color: var(--accent); letter-spacing: 1px;
+  }
+  #user-panel-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 16px; cursor: pointer; line-height: 1; padding: 0;
+  }
+  #user-panel-close:hover { color: var(--text); }
+  #user-panel-body {
+    padding: 14px 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  #user-panel-body::-webkit-scrollbar { width: 4px; }
+  #user-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .up-section {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .up-section:last-child { border-bottom: none; margin-bottom: 0; }
+  .up-section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .up-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .up-row label {
+    font-size: 11px; color: var(--text-dim);
+    min-width: 90px; flex-shrink: 0;
+  }
+  .up-row input {
+    flex: 1; padding: 5px 9px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 12px;
+    font-family: 'Source Sans 3', sans-serif; outline: none;
+    transition: border-color .15s;
+  }
+  .up-row input:focus { border-color: var(--accent); }
+  .up-row input[readonly] {
+    color: var(--text-dim); cursor: default;
+    background: rgba(255,255,255,0.02);
+  }
+  .up-badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 10px; font-size: 11px; font-weight: 600;
+  }
+  .up-badge.actif    { background: rgba(82,183,136,0.15); color: #52b788; }
+  .up-badge.attente  { background: rgba(212,176,122,0.15); color: var(--accent); }
+  .up-badge.suspendu { background: rgba(231,76,60,0.12); color: #e74c3c; }
+  .up-badge.super    { background: rgba(231,76,60,0.15); color: #e74c3c; }
+  .up-badge.abonne   { background: rgba(142,202,230,0.15); color: var(--accent2); }
+  .up-badge.gratuit  { background: rgba(255,255,255,0.06); color: var(--text-dim); }
+  #up-save-btn {
+    width: 100%; padding: 8px; margin-top: 4px;
+    background: rgba(212,176,122,0.12); border: 1px solid rgba(212,176,122,0.4);
+    color: var(--accent); border-radius: 4px; cursor: pointer;
+    font-size: 12px; font-family: 'Source Sans 3', sans-serif;
+    transition: all .2s;
+  }
+  #up-save-btn:hover { background: rgba(212,176,122,0.22); }
+  #up-logout-btn {
+    width: 100%; padding: 8px; margin-top: 6px;
+    background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.3);
+    color: #e74c3c; border-radius: 4px; cursor: pointer;
+    font-size: 12px; font-family: 'Source Sans 3', sans-serif;
+    transition: all .2s;
+  }
+  #up-logout-btn:hover { background: rgba(231,76,60,0.2); }
+  #up-msg {
+    font-size: 11px; text-align: center; margin-top: 8px;
+    padding: 5px 10px; border-radius: 4px; display: none;
+  }
+  #up-msg.ok  { display: block; background: rgba(82,183,136,0.12); color: #52b788; }
+  #up-msg.err { display: block; background: rgba(231,76,60,0.10); color: #e74c3c; }
+
   /* ── Modale auth ─────────────────────────────────────────── */
   #auth-modal-overlay {
     display: none; position: fixed; inset: 0; z-index: 600;
@@ -1715,7 +1837,7 @@
     <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.47 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
-  <div class="info" id="z1-info">Chargement…</div>
+  <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
   <div id="z1-welcome" style="display:none;font-size:11px;color:var(--text-mid);line-height:1.4;padding:0 4px"></div>
   <div id="z1-right">
     <button class="btn-save-load" id="btn-measure" onclick="toggleMeasureMode()" title="Mesurer une durée entre deux dates (cliquer deux points sur la frise)">
@@ -1800,6 +1922,60 @@
 
 <!-- Popup invitation à s'abonner -->
 <!-- Popup admin : modifier l'importance d'un événement -->
+
+<!-- ── Panneau profil utilisateur ────────────────────────────── -->
+<div id="user-panel">
+  <div id="user-panel-header">
+    <span class="up-title">👤 Mon profil</span>
+    <button id="user-panel-close" onclick="closeUserPanel()">✕</button>
+  </div>
+  <div id="user-panel-body">
+
+    <!-- Statut -->
+    <div class="up-section" id="up-section-statut">
+      <div class="up-section-title">Statut</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span id="up-badge-statut" class="up-badge"></span>
+        <span id="up-badge-abonnement" class="up-badge"></span>
+      </div>
+    </div>
+
+    <!-- Informations personnelles -->
+    <div class="up-section">
+      <div class="up-section-title">Informations personnelles</div>
+      <div class="up-row"><label>Prénom</label><input type="text" id="up-prenom" placeholder="Prénom"></div>
+      <div class="up-row"><label>Nom</label><input type="text" id="up-nom" placeholder="Nom"></div>
+      <div class="up-row"><label>Nom d'utilisateur</label><input type="text" id="up-username" placeholder="username"></div>
+      <div class="up-row"><label>Date de naissance</label><input type="date" id="up-ddn"></div>
+      <div class="up-row"><label>Email</label><input type="email" id="up-email" readonly></div>
+      <button id="up-save-btn" onclick="upSaveProfil()">💾 Enregistrer les modifications</button>
+    </div>
+
+    <!-- Changer le mot de passe -->
+    <div class="up-section">
+      <div class="up-section-title">Changer le mot de passe</div>
+      <div class="up-row"><label>Nouveau mdp</label><input type="password" id="up-pwd1" placeholder="8 caractères min."></div>
+      <div class="up-row"><label>Confirmation</label><input type="password" id="up-pwd2" placeholder="Répéter"></div>
+      <button id="up-save-btn" onclick="upSavePassword()" style="background:rgba(142,202,230,0.1);border-color:rgba(142,202,230,0.35);color:var(--accent2);">
+        🔑 Changer le mot de passe
+      </button>
+    </div>
+
+    <!-- Gestion utilisateurs (superuser uniquement) -->
+    <div class="up-section" id="up-section-admin" style="display:none">
+      <div class="up-section-title">🔧 Gestion des utilisateurs</div>
+      <div id="up-users-list" style="font-size:12px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+      <button onclick="upLoadUsers()" style="margin-top:8px;font-size:11px;padding:4px 12px;
+        background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--text);cursor:pointer;width:100%">
+        ↻ Actualiser
+      </button>
+    </div>
+
+    <div id="up-msg"></div>
+    <button id="up-logout-btn" onclick="authLogout()">↩ Déconnexion</button>
+
+  </div>
+</div>
 <div id="admin-importance-popup">
   <h5>⚙️ Admin — Importance</h5>
   <div id="admin-imp-title"></div>
@@ -5061,7 +5237,7 @@ function checkAll(val) {
 function updateZ1() {
   const roots = state.timelines.filter(t => !t.parentId);
   const en = roots.filter(t => t.enabled).length;
-  document.getElementById('z1-info').textContent = `${en}/${roots.length} frises actives`;
+  document.getElementById('btn-user') && null; // compteur frises supprimé — remplacé par btn-user
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6814,52 +6990,211 @@ async function onLoginSuccess(authData) {
 
 // ── Mettre à jour le bouton Z1 et le panneau profil ──────────
 function updateAuthUI() {
-  const btn = document.getElementById('btn-auth');
+  const btn     = document.getElementById('btn-auth');   // caché, compatibilité
+  const btnUser = document.getElementById('btn-user');
+
   if (currentProfil) {
-    const abbrev     = currentProfil.abonnement === 'abonne' ? '⭐' : '';
+    const abbrev     = currentProfil.abonnement === 'abonne' ? ' ⭐' : '';
     const adminBadge = isAdmin() ? ' 🔧' : '';
-    btn.textContent = `👤 ${currentProfil.username}${abbrev}${adminBadge}`;
-    btn.classList.add('connected');
-    // Panneau profil
-    document.getElementById('profile-name').textContent =
-      `${currentProfil.prenom} ${currentProfil.nom}`;
-    document.getElementById('profile-username').textContent =
-      `@${currentProfil.username}`;
-    const statusEl = document.getElementById('profile-status');
-    if (currentProfil.statut === 'superuser') {
-      statusEl.textContent = '🔧 Superuser';
-      statusEl.style.background = 'rgba(231,76,60,0.15)';
-      statusEl.style.color = '#e74c3c';
-    } else {
-      statusEl.textContent = currentProfil.statut === 'actif' ? '● Actif' : '⏳ En attente';
-      statusEl.style.background = currentProfil.statut === 'actif'
-        ? 'rgba(82,183,136,0.15)' : 'rgba(212,176,122,0.15)';
-      statusEl.style.color = currentProfil.statut === 'actif' ? '#52b788' : 'var(--accent)';
+    const label      = `👤 ${currentProfil.username}${abbrev}${adminBadge}`;
+    if (btn)     { btn.textContent = label; btn.classList.add('connected'); }
+    if (btnUser) { btnUser.textContent = label; btnUser.classList.add('connected'); }
+
+    // Alimenter le panneau profil
+    const p = currentProfil;
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+    setVal('up-prenom',   p.prenom);
+    setVal('up-nom',      p.nom);
+    setVal('up-username', p.username);
+    setVal('up-ddn',      p.date_naissance || '');
+    setVal('up-email',    currentUser?.email || '');
+
+    // Badges statut / abonnement
+    const bs = document.getElementById('up-badge-statut');
+    const ba = document.getElementById('up-badge-abonnement');
+    if (bs) {
+      const map = { superuser:'super', actif:'actif', en_attente:'attente', suspendu:'suspendu' };
+      const lbl = { superuser:'🔧 Superuser', actif:'● Actif', en_attente:'⏳ En attente', suspendu:'⛔ Suspendu' };
+      bs.className = `up-badge ${map[p.statut] || ''}`;
+      bs.textContent = lbl[p.statut] || p.statut;
     }
-    document.getElementById('profile-abonnement').textContent =
-      currentProfil.abonnement === 'abonne'
-        ? '⭐ Abonnement actif'
-        : '🔓 Accès gratuit — contactez-nous pour vous abonner';
-    // Panneau gestion groupes : visible seulement pour superuser
-    const panelGroupes = document.getElementById('panel-gestion-groupes');
-    if (isSuperuser()) {
-      panelGroupes.style.display = 'block';
-      loadUsersList();
-    } else {
-      panelGroupes.style.display = 'none';
+    if (ba) {
+      ba.className = `up-badge ${p.abonnement === 'abonne' ? 'abonne' : 'gratuit'}`;
+      ba.textContent = p.abonnement === 'abonne' ? '⭐ Abonné' : '🔓 Accès gratuit';
     }
-    // Afficher l'onglet profil
-    document.getElementById('tab-profile').style.display = '';
+
+    // Section admin
+    const secAdmin = document.getElementById('up-section-admin');
+    if (secAdmin) {
+      if (isSuperuser()) { secAdmin.style.display = ''; upLoadUsers(); }
+      else               { secAdmin.style.display = 'none'; }
+    }
+
+    // Panneau auth-modal (compatibilité)
+    const pname = document.getElementById('profile-name');
+    if (pname) pname.textContent = `${p.prenom} ${p.nom}`;
+    const pusr = document.getElementById('profile-username');
+    if (pusr) pusr.textContent = `@${p.username}`;
+    const pstatus = document.getElementById('profile-status');
+    if (pstatus) {
+      if (p.statut === 'superuser') {
+        pstatus.textContent = '🔧 Superuser';
+        pstatus.style.cssText = 'background:rgba(231,76,60,0.15);color:#e74c3c;';
+      } else {
+        pstatus.textContent = p.statut === 'actif' ? '● Actif' : '⏳ En attente';
+        pstatus.style.cssText = p.statut === 'actif'
+          ? 'background:rgba(82,183,136,0.15);color:#52b788;'
+          : 'background:rgba(212,176,122,0.15);color:var(--accent);';
+      }
+    }
+    const pabo = document.getElementById('profile-abonnement');
+    if (pabo) pabo.textContent = p.abonnement === 'abonne'
+      ? '⭐ Abonnement actif'
+      : '🔓 Accès gratuit — contactez-nous pour vous abonner';
+    const pg = document.getElementById('panel-gestion-groupes');
+    if (pg) { pg.style.display = isSuperuser() ? 'block' : 'none'; if (isSuperuser()) loadUsersList(); }
+    const tp = document.getElementById('tab-profile');
+    if (tp) tp.style.display = '';
+
   } else {
-    btn.textContent = '👤 Connexion';
-    btn.classList.remove('connected');
-    document.getElementById('tab-profile').style.display = 'none';
+    if (btn)     { btn.textContent = '👤 Connexion'; btn.classList.remove('connected'); }
+    if (btnUser) { btnUser.textContent = '👤 Anonyme'; btnUser.classList.remove('connected'); }
+    const tp = document.getElementById('tab-profile');
+    if (tp) tp.style.display = 'none';
   }
+
   // Bouton création événement : masqué pour anonymes
   const newEvtBtn = document.getElementById('btn-new-evt');
   if (newEvtBtn) newEvtBtn.style.display = canCreate() ? '' : 'none';
-  // Reconstruire le catalogue pour refléter les droits
   buildCatalogueList(document.getElementById('cat-search')?.value || '');
+}
+
+// ── Panneau profil flottant ───────────────────────────────────
+function toggleUserPanel(e) {
+  const panel = document.getElementById('user-panel');
+  if (panel.classList.contains('open')) { closeUserPanel(); return; }
+
+  // Si pas connecté → ouvrir la modale de connexion
+  if (!currentProfil) { openAuthModal(); return; }
+
+  // Positionner sous le bouton
+  const btn  = document.getElementById('btn-user');
+  const rect = btn.getBoundingClientRect();
+  panel.style.top  = (rect.bottom + 6) + 'px';
+  panel.style.right = (window.innerWidth - rect.right) + 'px';
+  panel.classList.add('open');
+
+  // Fermer si clic extérieur
+  setTimeout(() => document.addEventListener('click', _upOutsideClick), 0);
+}
+
+function closeUserPanel() {
+  document.getElementById('user-panel').classList.remove('open');
+  document.removeEventListener('click', _upOutsideClick);
+  const msg = document.getElementById('up-msg');
+  if (msg) { msg.className = ''; msg.textContent = ''; }
+}
+
+function _upOutsideClick(e) {
+  const panel = document.getElementById('user-panel');
+  const btn   = document.getElementById('btn-user');
+  if (!panel.contains(e.target) && e.target !== btn) closeUserPanel();
+}
+
+function upMsg(txt, type = 'ok') {
+  const el = document.getElementById('up-msg');
+  el.textContent = txt; el.className = type;
+  setTimeout(() => { el.className = ''; el.textContent = ''; }, 3500);
+}
+
+async function upSaveProfil() {
+  if (!currentUser || !currentProfil) return;
+  const prenom   = document.getElementById('up-prenom').value.trim();
+  const nom      = document.getElementById('up-nom').value.trim();
+  const username = document.getElementById('up-username').value.trim();
+  const ddn      = document.getElementById('up-ddn').value;
+  if (!prenom || !nom || !username) { upMsg('Prénom, nom et username sont requis.', 'err'); return; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profils?id=eq.${currentUser.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + authToken,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ prenom, nom, username, date_naissance: ddn || null })
+    });
+    if (!res.ok) throw new Error('Erreur serveur');
+    currentProfil = { ...currentProfil, prenom, nom, username, date_naissance: ddn || null };
+    updateAuthUI();
+    upMsg('✅ Profil mis à jour.');
+  } catch(e) { upMsg('❌ ' + e.message, 'err'); }
+}
+
+async function upSavePassword() {
+  if (!authToken) return;
+  const pwd1 = document.getElementById('up-pwd1').value;
+  const pwd2 = document.getElementById('up-pwd2').value;
+  if (!pwd1 || pwd1.length < 8) { upMsg('Mot de passe trop court (8 car. min).', 'err'); return; }
+  if (pwd1 !== pwd2)             { upMsg('Les mots de passe ne correspondent pas.', 'err'); return; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: {
+        'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + authToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password: pwd1 })
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.msg || 'Erreur'); }
+    document.getElementById('up-pwd1').value = '';
+    document.getElementById('up-pwd2').value = '';
+    upMsg('✅ Mot de passe modifié.');
+  } catch(e) { upMsg('❌ ' + e.message, 'err'); }
+}
+
+async function upLoadUsers() {
+  const container = document.getElementById('up-users-list');
+  if (!container || !isSuperuser()) return;
+  try {
+    const users = await sbFetch(sbUrl('profils', '?select=id,username,prenom,nom,statut,abonnement&order=username'));
+    if (!users) return;
+    container.innerHTML = '';
+    users.forEach(u => {
+      const role = u.statut === 'superuser' ? 'superuser' : u.abonnement === 'abonne' ? 'abonne' : 'anonyme';
+      const roleLabel = role === 'superuser' ? '🔧' : role === 'abonne' ? '⭐' : '👤';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.03);border-radius:4px;border:1px solid var(--border)';
+      row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${roleLabel} ${u.username}</span>
+        <span style="font-size:10px;color:var(--text-dim)">${u.prenom} ${u.nom}</span>
+        <select onchange="upSetUserRole('${u.id}', this.value)"
+          style="font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:2px 4px;cursor:pointer">
+          <option value="anonyme"   ${role==='anonyme'   ?'selected':''}>Anonyme</option>
+          <option value="abonne"    ${role==='abonne'    ?'selected':''}>Abonné</option>
+          <option value="superuser" ${role==='superuser' ?'selected':''}>Superuser</option>
+        </select>`;
+      container.appendChild(row);
+    });
+  } catch(e) { console.warn('[upLoadUsers]', e.message); }
+}
+
+async function upSetUserRole(uid, role) {
+  const map = {
+    anonyme:   { statut: 'actif',      abonnement: 'gratuit' },
+    abonne:    { statut: 'actif',      abonnement: 'abonne'  },
+    superuser: { statut: 'superuser',  abonnement: 'abonne'  }
+  };
+  const patch = map[role]; if (!patch) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/profils?id=eq.${uid}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + authToken,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(patch)
+    });
+    upMsg(`✅ Rôle mis à jour.`);
+  } catch(e) { upMsg('❌ ' + e.message, 'err'); }
 }
 
 // ── Helpers messages ──────────────────────────────────────────
