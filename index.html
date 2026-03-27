@@ -343,10 +343,8 @@
     border-top: 2px solid var(--accent2);
     border-radius: 8px;
     width: 480px; max-width: 95vw;
-    max-height: 60vh;
     box-shadow: 0 12px 40px rgba(0,0,0,.5);
     font-family: 'Source Sans 3', sans-serif;
-    overflow: hidden;
     flex-direction: column;
   }
   #search-global-panel.open { display: flex; }
@@ -367,7 +365,7 @@
   }
   #sgp-close:hover { color: var(--text); }
   #sgp-list {
-    overflow-y: auto; flex: 1; padding: 4px 0;
+    overflow-y: auto; max-height: 55vh; padding: 4px 0;
   }
   #sgp-list::-webkit-scrollbar { width: 4px; }
   #sgp-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
