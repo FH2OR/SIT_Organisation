@@ -7402,7 +7402,26 @@ function searchCanvas(q) {
     cEl.style.color = count ? 'var(--accent)' : '#e74c3c';
 
     render();
-    if (firstHit?.evt) animateTo(evtStartDays(firstHit.evt), state.scale);
+
+    if (firstHit?.evt) {
+      const hit = firstHit.evt;
+      const tl  = firstHit.tl;
+      const day = evtStartDays(hit);
+      const end = evtEndDays(hit);
+      const mid = (day + end) / 2;
+      let targetScale;
+      if (hit.type === 'point') {
+        targetScale = Math.max(state.scale, 2);
+      } else {
+        const span = Math.abs(end - day) || 1;
+        targetScale = Math.min(canvas.width / span * 0.6, 50);
+        targetScale = Math.max(targetScale, 0.01);
+      }
+      animateTo(mid, targetScale);
+      state.selected = { evt: hit, tl };
+      render();
+      showFCDetail(hit, tl);
+    }
   }, 200);
 }
 
