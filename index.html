@@ -1335,20 +1335,20 @@
   flex-direction: row;
 }
 
-/* ── Logo gauche ── */
+/* ── Logo gauche — carré de la hauteur totale ── */
 #splash-logo-col {
   flex-shrink: 0;
+  width: 252px;
   background: #060c18;
   border-right: 1px solid #1a2840;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  align-self: stretch;
 }
 #splash-logo-img {
-  width: 184px;
-  height: 100%;
-  object-fit: cover;
+  width: 252px;
+  height: 252px;
+  object-fit: contain;
   display: block;
 }
 
@@ -1358,6 +1358,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 /* ── Photos défilantes ── */
@@ -1398,7 +1399,7 @@
 #splash-form {
   display: flex;
   align-items: stretch;
-  gap: 10px;
+  gap: 5px;
   padding: 10px 12px;
   background: #111a2e;
   border-top: 1px solid #1e2e4a;
@@ -1439,23 +1440,33 @@
 }
 #splash-login-btn:hover { background: rgba(200,169,110,0.28); }
 
+/* Les 3 boutons Anonyme, S'inscrire, Quitter ont la même largeur */
+#splash-btn-group { display: contents; }
+
+#splash-anon-btn, #splash-register-btn, #splash-quit-btn {
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  width: 70px;
+  flex-shrink: 0;
+  cursor: pointer;
+  font-family: "Source Sans 3", sans-serif;
+  transition: background .15s;
+  align-self: stretch;
+}
 #splash-anon-btn {
   background: rgba(82,183,136,0.12);
   border: 1px solid rgba(82,183,136,0.35);
   color: #52b788;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 0;
-  width: 60px;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: "Source Sans 3", sans-serif;
-  transition: background .15s;
-  flex-shrink: 0;
-  align-self: stretch;
 }
 #splash-anon-btn:hover { background: rgba(82,183,136,0.25); }
+
+#splash-register-btn {
+  background: rgba(142,202,230,0.10);
+  border: 1px solid rgba(142,202,230,0.3);
+  color: var(--accent2);
+}
+#splash-register-btn:hover { background: rgba(142,202,230,0.22); }
 
 /* séparateur visuel avant Quitter */
 #splash-quit-sep {
@@ -1469,15 +1480,6 @@
   background: rgba(231,76,60,0.10);
   border: 1px solid rgba(231,76,60,0.35);
   color: #e74c3c;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 0 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-  font-family: "Source Sans 3", sans-serif;
-  transition: background .15s;
-  white-space: nowrap;
   margin-left: auto;
 }
 #splash-quit-btn:hover { background: rgba(231,76,60,0.25); }
@@ -1532,7 +1534,10 @@
 
         <!-- Zone saisie -->
         <div id="splash-form">
-          <button id="splash-anon-btn" onclick="splashAnonymous()" title="Accès aux rubriques publiques uniquement">Anonyme</button>
+          <div id="splash-btn-group">
+            <button id="splash-anon-btn" onclick="splashAnonymous()" title="Accès aux rubriques publiques uniquement">Anonyme</button>
+            <button id="splash-register-btn" onclick="splashShowRegister()" title="Créer un compte">S'inscrire</button>
+          </div>
           <div id="splash-fields">
             <input type="email"    id="splash-email"    placeholder="Adresse e-mail" autocomplete="username">
             <input type="password" id="splash-password" placeholder="Mot de passe"   autocomplete="current-password">
@@ -1553,10 +1558,37 @@
   </div>
 </div>
 
+<!-- Panneau inscription (overlay sur le splash) -->
+<div id="splash-register-panel" style="display:none;position:fixed;inset:0;z-index:10000;
+  background:rgba(10,14,22,0.97);align-items:center;justify-content:center;">
+  <div style="background:#0e1625;border:1px solid #2a3a5a;border-radius:8px;padding:24px;width:320px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+    <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:16px;text-align:center">
+      ✚ Créer un compte
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input type="text"     id="sreg-prenom"   placeholder="Prénom"          style="background:#0a0f1a;border:1px solid #2a3a5a;border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;font-family:'Source Sans 3',sans-serif;">
+      <input type="text"     id="sreg-nom"      placeholder="Nom"             style="background:#0a0f1a;border:1px solid #2a3a5a;border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;font-family:'Source Sans 3',sans-serif;">
+      <input type="text"     id="sreg-username" placeholder="Nom d'utilisateur" style="background:#0a0f1a;border:1px solid #2a3a5a;border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;font-family:'Source Sans 3',sans-serif;">
+      <input type="email"    id="sreg-email"    placeholder="Email"           style="background:#0a0f1a;border:1px solid #2a3a5a;border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;font-family:'Source Sans 3',sans-serif;">
+      <input type="password" id="sreg-password" placeholder="Mot de passe (8 car. min)" style="background:#0a0f1a;border:1px solid #2a3a5a;border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;font-family:'Source Sans 3',sans-serif;">
+      <div id="sreg-msg" style="font-size:11px;color:#e74c3c;display:none;text-align:center"></div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button onclick="splashDoRegister()" style="flex:1;background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.4);
+          color:var(--accent);border-radius:4px;font-size:12px;padding:7px;cursor:pointer;
+          font-family:'Source Sans 3',sans-serif;">💾 Créer mon compte</button>
+        <button onclick="splashHideRegister()" style="background:rgba(255,255,255,0.05);border:1px solid #2a3a5a;
+          color:var(--text-dim);border-radius:4px;font-size:12px;padding:7px 12px;cursor:pointer;
+          font-family:'Source Sans 3',sans-serif;">✗ Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.45 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.47 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <div class="info" id="z1-info">Chargement…</div>
@@ -7036,6 +7068,46 @@ async function splashLogin() {
   } catch(e) { splashMsg('❌ ' + e.message); }
 }
 
+// Inscription depuis le splash
+function splashShowRegister() {
+  document.getElementById('splash-register-panel').style.display = 'flex';
+  document.getElementById('sreg-prenom').focus();
+}
+function splashHideRegister() {
+  document.getElementById('splash-register-panel').style.display = 'none';
+  document.getElementById('sreg-msg').style.display = 'none';
+}
+async function splashDoRegister() {
+  const prenom   = document.getElementById('sreg-prenom').value.trim();
+  const nom      = document.getElementById('sreg-nom').value.trim();
+  const username = document.getElementById('sreg-username').value.trim();
+  const email    = document.getElementById('sreg-email').value.trim();
+  const password = document.getElementById('sreg-password').value;
+  const msg      = document.getElementById('sreg-msg');
+
+  if (!prenom || !nom || !username || !email || !password) {
+    msg.textContent = '❌ Tous les champs sont requis.'; msg.style.display = 'block'; return;
+  }
+  if (password.length < 8) {
+    msg.textContent = '❌ Mot de passe trop court (8 caractères min).'; msg.style.display = 'block'; return;
+  }
+  msg.textContent = 'Création en cours…'; msg.style.color = '#52b788'; msg.style.display = 'block';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, data: { prenom, nom, username } })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.msg || data.error_description || 'Erreur inscription');
+    msg.textContent = '✅ Compte créé ! En attente de validation par un administrateur.';
+    msg.style.color = '#52b788';
+    setTimeout(() => splashHideRegister(), 3000);
+  } catch(e) {
+    msg.textContent = '❌ ' + e.message; msg.style.color = '#e74c3c';
+  }
+}
+
 // Accès anonyme
 function splashAnonymous() {
   splashHide();
@@ -7207,7 +7279,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.45 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.47 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
