@@ -1839,7 +1839,7 @@
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
-  <div id="z1-welcome" style="display:none;font-size:11px;color:var(--text-mid);line-height:1.4;padding:0 4px"></div>
+  <div id="z1-welcome" style="display:none;font-size:14px;color:var(--text-mid);line-height:1.4;padding:0 4px"></div>
   <div id="z1-right">
     <button class="btn-save-load" id="btn-measure" onclick="toggleMeasureMode()" title="Mesurer une durée entre deux dates (cliquer deux points sur la frise)">
       📐 Mesurer
@@ -7707,20 +7707,23 @@ async function showWelcomeMessage() {
   let ligneSavoir = '';
   try {
     const evts = await sbFetch(sbUrl('evenements',
-      '?select=titre,date_debut&type=eq.point&date_debut=not.is.null&limit=100'));
+      '?select=titre,date_debut,type&date_debut=not.is.null&limit=200'));
     if (evts && evts.length > 0) {
-      // Filtrer côté client les dates valides
-      const valides = evts.filter(e => e.date_debut && e.titre);
+      const valides = evts.filter(e => {
+        if (!e.titre || !e.date_debut) return false;
+        let t = e.date_debut;
+        if (typeof t === 'string') { try { t = JSON.parse(t); } catch(_) { return false; } }
+        return Array.isArray(t) && t.length === 4 && !isNaN(t[1]);
+      });
+      console.log('[welcome] événements valides:', valides.length);
       if (valides.length > 0) {
         const evt      = valides[Math.floor(Math.random() * valides.length)];
-        // date_debut est un tableau tuple [signe, année, mois, jour]
         let evtTuple = evt.date_debut;
-        if (typeof evtTuple === 'string') {
-          try { evtTuple = JSON.parse(evtTuple); } catch(e) { evtTuple = null; }
-        }
+        if (typeof evtTuple === 'string') { try { evtTuple = JSON.parse(evtTuple); } catch(_) { evtTuple = null; } }
         if (evtTuple) {
           const todayTuple = [-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()];
           const diffDays   = Math.floor(tupleToDays(todayTuple) - tupleToDays(evtTuple));
+          console.log('[welcome] evt:', evt.titre, 'tuple:', evtTuple, 'diffDays:', diffDays);
           if (!isNaN(diffDays) && diffDays > 0) {
             const diffAns = Math.floor(diffDays / 365);
             const duree   = diffAns > 1
