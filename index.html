@@ -7362,50 +7362,61 @@ async function upSetUserRole(uid, role) {
 //  RECHERCHE
 // ═══════════════════════════════════════════════════════════════
 
-// ── 1. Recherche dans le canvas (rubriques + événements chargés) ──
+// Normalise : minuscules + sans accents
+function normalizeStr(s) {
+  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+// ── 1. Recherche canvas (rubriques + événements chargés) ──────
 let _srchCanvasTimer = null;
 function searchCanvas(q) {
   clearTimeout(_srchCanvasTimer);
   _srchCanvasTimer = setTimeout(() => {
-    q = normalizeStr(q);
+    const qn = normalizeStr(q);
     // Réinitialiser le highlight
     state.timelines.forEach(tl => {
       tl._srchHit = false;
       tl.events.forEach(e => { e._srchHit = false; });
     });
-    if (!q) { render(); return; }
 
-    let firstHit = null;
+    // Seuil : minimum 3 caractères pour surbrillance
+    if (qn.length < 3) {
+      document.getElementById('srch-canvas-count')?.remove();
+      render(); return;
+    }
+
+    let count = 0, firstHit = null;
     state.timelines.forEach(tl => {
-      if (normalizeStr(tl.title).includes(q)) { tl._srchHit = true; if (!firstHit) firstHit = { tl, evt: null }; }
+      if (normalizeStr(tl.title).includes(qn)) { tl._srchHit = true; }
       tl.events.forEach(e => {
-        const inTitle   = normalizeStr(e.title).includes(q);
-        const inComment = normalizeStr(e.comment).includes(q);
-        if (inTitle || inComment) {
+        if (normalizeStr(e.title).includes(qn) || normalizeStr(e.comment).includes(qn)) {
           e._srchHit = true;
           tl._srchHit = true;
+          count++;
           if (!firstHit) firstHit = { tl, evt: e };
         }
       });
     });
 
-    render();
-
-    // Centrer sur le premier résultat
-    if (firstHit?.evt) {
-      const day = evtStartDays(firstHit.evt);
-      animateTo(day, state.scale);
+    // Afficher le compteur sous le champ
+    let cEl = document.getElementById('srch-canvas-count');
+    if (!cEl) {
+      cEl = document.createElement('div');
+      cEl.id = 'srch-canvas-count';
+      cEl.style.cssText = 'position:absolute;top:32px;right:0;font-size:10px;color:var(--accent);' +
+        'background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:1px 6px;white-space:nowrap;z-index:10';
+      document.getElementById('srch-canvas')?.parentElement?.appendChild(cEl);
     }
+    cEl.textContent = count ? `${count} résultat${count > 1 ? 's' : ''}` : 'Aucun résultat';
+    cEl.style.color = count ? 'var(--accent)' : '#e74c3c';
+
+    render();
+    if (firstHit?.evt) animateTo(evtStartDays(firstHit.evt), state.scale);
   }, 200);
 }
 
 // ── 2. Recherche globale Supabase ─────────────────────────────
 let _sgpResults = [];
-
-// Normalise une chaîne : minuscules + suppression accents + espaces normalisés
-function normalizeStr(s) {
-  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-}
 
 async function searchGlobal(q) {
   q = (q || '').trim();
@@ -7415,7 +7426,6 @@ async function searchGlobal(q) {
   const list  = document.getElementById('sgp-list');
   list.innerHTML = '<div id="sgp-empty">Recherche en cours…</div>';
 
-  // Positionner sous le champ
   const inp  = document.getElementById('srch-global');
   const rect = inp.getBoundingClientRect();
   panel.style.top   = (rect.bottom + 6) + 'px';
@@ -7423,44 +7433,56 @@ async function searchGlobal(q) {
   panel.classList.add('open');
 
   try {
-    // Récupérer tous les événements (filtrage côté client pour gérer accents/casse)
-    const evts = await sbFetch(sbUrl('evenements',
-      '?select=id,titre,commentaire,date_debut,rubrique_id,couleur&order=titre.asc&limit=2000'));
+    // Fetch avec le token connecté si disponible (contourne RLS anon)
+    const headers = {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': 'Bearer ' + (authToken || SUPABASE_KEY)
+    };
+    const res = await fetch(
+      sbUrl('evenements', '?select=id,titre,commentaire,date_debut,rubrique_id,couleur&order=titre.asc&limit=5000'),
+      { headers }
+    );
+    console.log('[searchGlobal] HTTP', res.status);
+    const evts = res.ok ? await res.json() : [];
+    console.log('[searchGlobal] reçus:', evts?.length, '| ex:', evts?.[0]?.titre);
 
     if (!evts || evts.length === 0) {
-      list.innerHTML = '<div id="sgp-empty">Aucun événement en base.</div>';
+      list.innerHTML = '<div id="sgp-empty">Aucun événement accessible.</div>';
       return;
     }
 
-    // Filtrage côté client : insensible à la casse ET aux accents
+    // Filtrage client — insensible casse + accents — titre ET commentaire
     const qNorm = normalizeStr(q);
     const found = evts.filter(e =>
       normalizeStr(e.titre).includes(qNorm) ||
       normalizeStr(e.commentaire).includes(qNorm)
     );
+    console.log('[searchGlobal] filtrés:', found.length);
 
     if (found.length === 0) {
-      list.innerHTML = '<div id="sgp-empty">Aucun résultat pour « ' + q + ' ».</div>';
+      list.innerHTML = `<div id="sgp-empty">Aucun résultat pour « ${q} ».</div>`;
       return;
     }
 
-    // Construire la map des rubriques
     const rubMap = {};
     catalogueData.forEach(c => { rubMap[c.id] = c; });
 
-    list.innerHTML = '';
-    _sgpResults = found;
+    // En-tête compteur
+    list.innerHTML = `<div style="padding:5px 14px 4px;font-size:10px;font-weight:700;
+      text-transform:uppercase;letter-spacing:1px;color:var(--accent);
+      background:var(--bg3);border-bottom:1px solid var(--border)">
+      ${found.length} résultat${found.length > 1 ? 's' : ''} pour « ${q} »
+    </div>`;
 
+    _sgpResults = found;
     found.forEach(evt => {
-      const rubId    = evt.rubrique_id;
-      const cat      = rubMap[rubId];
-      const rubTitle = cat ? cat.title : (rubId || '—');
+      const rubId     = evt.rubrique_id;
+      const cat       = rubMap[rubId];
+      const rubTitle  = cat ? cat.title : (rubId || '—');
       const parentCat = cat?.parentId ? rubMap[cat.parentId] : null;
       const rubLabel  = parentCat ? `${parentCat.title} › ${rubTitle}` : rubTitle;
       const color     = evt.couleur || cat?.color || '#8ecae6';
       const dateStr   = evt.date_debut ? String(evt.date_debut) : '';
-
-      // Déjà chargé dans le canvas ?
       const alreadyLoaded = !!state.timelines.find(t => t.id === rubId && t.enabled);
 
       const row = document.createElement('div');
