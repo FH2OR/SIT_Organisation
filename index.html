@@ -7709,7 +7709,7 @@ async function showWelcomeMessage() {
     const evts = await sbFetch(sbUrl('evenements',
       '?select=titre,date_debut,type&date_debut=not.is.null&limit=200'));
     if (evts && evts.length > 0) {
-      console.log('[welcome] premier evt brut:', JSON.stringify(evts[0]));
+      console.log('[welcome] premier evt brut:', evts[0]?.titre, '| date_debut type:', typeof evts[0]?.date_debut, '| valeur:', evts[0]?.date_debut);
       const valides = evts.filter(e => {
         if (!e.titre || !e.date_debut) return false;
         let t = e.date_debut;
