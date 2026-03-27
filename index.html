@@ -4388,6 +4388,11 @@ function openCreateModal(clickDay, targetTl, forceType, endDay) {
 
 function closeCreateModal() {
   document.getElementById('create-modal-overlay').classList.remove('open');
+  // Réinitialiser l'état drag pour éviter que la frise dérive après fermeture
+  state.drag.active = false;
+  state.drag.moved  = false;
+  state.pan.active  = false;
+  canvas.style.cursor = 'default';
 }
 
 function setCreateType(t) {
