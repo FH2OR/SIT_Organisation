@@ -1959,7 +1959,7 @@
     <div class="srch-wrap" style="margin-top:14px">
       <span class="srch-label">Canvas</span>
       <input class="srch-input" id="srch-canvas" type="text" placeholder="🔍 Chercher…"
-             oninput="searchCanvas(this.value)" onkeydown="if(e.key==='Escape')this.value=''&&searchCanvas('')"
+             oninput="searchCanvas(this.value)" onkeydown="if(event.key==='Escape'){this.value='';searchCanvas('');}"
              title="Recherche dans les rubriques et événements chargés">
       <span class="srch-ico">⌕</span>
     </div>
@@ -7367,7 +7367,7 @@ let _srchCanvasTimer = null;
 function searchCanvas(q) {
   clearTimeout(_srchCanvasTimer);
   _srchCanvasTimer = setTimeout(() => {
-    q = (q || '').trim().toLowerCase();
+    q = normalizeStr(q);
     // Réinitialiser le highlight
     state.timelines.forEach(tl => {
       tl._srchHit = false;
@@ -7377,10 +7377,10 @@ function searchCanvas(q) {
 
     let firstHit = null;
     state.timelines.forEach(tl => {
-      if (tl.title.toLowerCase().includes(q)) { tl._srchHit = true; if (!firstHit) firstHit = { tl, evt: null }; }
+      if (normalizeStr(tl.title).includes(q)) { tl._srchHit = true; if (!firstHit) firstHit = { tl, evt: null }; }
       tl.events.forEach(e => {
-        const inTitle   = (e.title   || '').toLowerCase().includes(q);
-        const inComment = (e.comment || '').toLowerCase().includes(q);
+        const inTitle   = normalizeStr(e.title).includes(q);
+        const inComment = normalizeStr(e.comment).includes(q);
         if (inTitle || inComment) {
           e._srchHit = true;
           tl._srchHit = true;
@@ -7402,6 +7402,11 @@ function searchCanvas(q) {
 // ── 2. Recherche globale Supabase ─────────────────────────────
 let _sgpResults = [];
 
+// Normalise une chaîne : minuscules + suppression accents + espaces normalisés
+function normalizeStr(s) {
+  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 async function searchGlobal(q) {
   q = (q || '').trim();
   if (q.length < 2) return;
@@ -7409,6 +7414,7 @@ async function searchGlobal(q) {
   const panel = document.getElementById('search-global-panel');
   const list  = document.getElementById('sgp-list');
   list.innerHTML = '<div id="sgp-empty">Recherche en cours…</div>';
+
   // Positionner sous le champ
   const inp  = document.getElementById('srch-global');
   const rect = inp.getBoundingClientRect();
@@ -7417,40 +7423,48 @@ async function searchGlobal(q) {
   panel.classList.add('open');
 
   try {
-    // Recherche dans événements (titre + commentaire) via ilike
-    const qEnc = encodeURIComponent(`%${q}%`);
+    // Récupérer tous les événements (filtrage côté client pour gérer accents/casse)
     const evts = await sbFetch(sbUrl('evenements',
-      `?select=id,titre,commentaire,date_debut,rubrique_id,couleur&or=(titre.ilike.${qEnc},commentaire.ilike.${qEnc})&limit=50`));
+      '?select=id,titre,commentaire,date_debut,rubrique_id,couleur&order=titre.asc&limit=2000'));
 
     if (!evts || evts.length === 0) {
-      list.innerHTML = '<div id="sgp-empty">Aucun résultat trouvé.</div>';
+      list.innerHTML = '<div id="sgp-empty">Aucun événement en base.</div>';
       return;
     }
 
-    // Récupérer les rubriques concernées
-    const rubIds = [...new Set(evts.map(e => e.rubrique_id).filter(Boolean))];
+    // Filtrage côté client : insensible à la casse ET aux accents
+    const qNorm = normalizeStr(q);
+    const found = evts.filter(e =>
+      normalizeStr(e.titre).includes(qNorm) ||
+      normalizeStr(e.commentaire).includes(qNorm)
+    );
+
+    if (found.length === 0) {
+      list.innerHTML = '<div id="sgp-empty">Aucun résultat pour « ' + q + ' ».</div>';
+      return;
+    }
+
+    // Construire la map des rubriques
     const rubMap = {};
     catalogueData.forEach(c => { rubMap[c.id] = c; });
 
     list.innerHTML = '';
-    _sgpResults = evts;
+    _sgpResults = found;
 
-    evts.forEach(evt => {
-      const rubId  = evt.rubrique_id;
-      const cat    = rubMap[rubId];
+    found.forEach(evt => {
+      const rubId    = evt.rubrique_id;
+      const cat      = rubMap[rubId];
       const rubTitle = cat ? cat.title : (rubId || '—');
       const parentCat = cat?.parentId ? rubMap[cat.parentId] : null;
-      const rubLabel = parentCat ? `${parentCat.title} › ${rubTitle}` : rubTitle;
-      const color  = evt.couleur || cat?.color || '#8ecae6';
+      const rubLabel  = parentCat ? `${parentCat.title} › ${rubTitle}` : rubTitle;
+      const color     = evt.couleur || cat?.color || '#8ecae6';
+      const dateStr   = evt.date_debut ? String(evt.date_debut) : '';
 
-      // Déjà chargé ?
+      // Déjà chargé dans le canvas ?
       const alreadyLoaded = !!state.timelines.find(t => t.id === rubId && t.enabled);
 
       const row = document.createElement('div');
       row.className = 'sgp-row';
-
-      const dateStr = evt.date_debut ? String(evt.date_debut) : '';
-
       row.innerHTML = `
         <div class="sgp-dot" style="background:${color}"></div>
         <div class="sgp-info">
@@ -7461,7 +7475,7 @@ async function searchGlobal(q) {
         ${alreadyLoaded
           ? `<button class="sgp-btn sgp-btn-done" disabled>✓ Chargé</button>`
           : cat
-            ? `<button class="sgp-btn sgp-btn-load" onclick="sgpLoad('${rubId}')">＋ Charger</button>`
+            ? `<button class="sgp-btn sgp-btn-load" onclick="sgpLoad('${rubId}', this)">＋ Charger</button>`
             : `<span style="font-size:11px;color:var(--text-dim)">—</span>`
         }`;
       list.appendChild(row);
@@ -7469,23 +7483,21 @@ async function searchGlobal(q) {
 
   } catch(e) {
     list.innerHTML = `<div id="sgp-empty">Erreur : ${e.message}</div>`;
+    console.error('[searchGlobal]', e);
   }
 }
 
-function sgpLoad(rubId) {
+function sgpLoad(rubId, btn) {
   addFromCatalogue(rubId);
   buildFA();
   render();
-  // Mettre à jour le bouton dans la liste
-  const panel = document.getElementById('sgp-list');
-  panel.querySelectorAll('.sgp-btn-load').forEach(btn => {
-    if (btn.getAttribute('onclick') === `sgpLoad('${rubId}')`) {
-      btn.className = 'sgp-btn sgp-btn-done';
-      btn.disabled  = true;
-      btn.textContent = '✓ Chargé';
-      btn.removeAttribute('onclick');
-    }
-  });
+  // Mettre à jour le bouton immédiatement
+  if (btn) {
+    btn.className    = 'sgp-btn sgp-btn-done';
+    btn.disabled     = true;
+    btn.textContent  = '✓ Chargé';
+    btn.removeAttribute('onclick');
+  }
 }
 
 function closeSearchGlobal() {
