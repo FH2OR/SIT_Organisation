@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.9 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.10 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2478,18 +2478,6 @@
           </div>
         </div>
         <input type="color" id="color-picker" style="display:none" onchange="applyColor(this.value)">
-      </div>
-    </div>
-    <div class="fc-options">
-      <div class="fc-label">Navigation</div>
-      <div class="fc-hint">
-        <span>Molette</span> : zoom avant / arrière<br>
-        <span>Glisser</span> : panoramique gauche / droite<br>
-        <span>Shift+glisser</span> : dessiner une période<br>
-        <span>Clic molette</span> : panoramique<br>
-        <span>Clic gauche</span> : sélectionner<br>
-        <span>Double-clic</span> : créer un événement<br>
-        <span>Survol</span> : afficher commentaire
       </div>
     </div>
   </div>
@@ -5671,19 +5659,9 @@ function showFCDetail(evt, tl) {
   if (evt.zone) { zoneText.textContent = evt.zone; zoneRow.style.display = 'flex'; }
   else { zoneRow.style.display = 'none'; }
 
-  // ── Ref / Dep ─────────────────────────────────────────────
-  let refDepEl = document.getElementById('fc-ref-dep');
-  if (!refDepEl) {
-    refDepEl = document.createElement('div');
-    refDepEl.id = 'fc-ref-dep';
-    refDepEl.style.cssText = 'font-size:10px;font-family:monospace;color:var(--text-dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap';
-    zoneRow.insertAdjacentElement('afterend', refDepEl);
-  }
-  const parts = [];
-  if (evt.ref) parts.push(`<span style="color:var(--accent)">ref: ${evt.ref}</span>`);
-  if (evt.dep) parts.push(`<span style="color:var(--accent2)">dep: ${evt.dep}</span>`);
-  refDepEl.innerHTML = parts.join('');
-  refDepEl.style.display = parts.length ? 'flex' : 'none';
+  // ── Ref / Dep — masqués pour les utilisateurs classiques ──
+  const refDepEl = document.getElementById('fc-ref-dep');
+  if (refDepEl) refDepEl.style.display = 'none';
 
   // ── Photo ────────────────────────────────────────────────
   const wrap = document.getElementById('fc-photo-wrap');
