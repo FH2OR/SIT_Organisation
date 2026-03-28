@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.7 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.8 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5159,16 +5159,28 @@ function closeCatalogue() {
 
 function closeAllVolets() {
   if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
-  const volets = ['volet-0','volet-1','volet-2'].map(id => document.getElementById(id));
-  // Animer chaque volet ouvert
-  volets.filter(v => v.classList.contains('open')).forEach(v => v.classList.add('closing'));
   document.getElementById('catalogue-trigger').classList.remove('open');
+
+  // Fermeture en cascade droite → gauche
+  const ordre = ['volet-2', 'volet-1', 'volet-0'];
+  let delai = 0;
+  ordre.forEach(id => {
+    const v = document.getElementById(id);
+    if (v.classList.contains('open')) {
+      setTimeout(() => v.classList.add('closing'), delai);
+      delai += 120; // 120ms entre chaque volet
+    }
+  });
+
+  // Nettoyage après la dernière animation
   _voletCloseTimer = setTimeout(() => {
-    volets.forEach(v => { v.classList.remove('open', 'active', 'closing'); });
+    ['volet-0','volet-1','volet-2'].forEach(id => {
+      document.getElementById(id).classList.remove('open', 'active', 'closing');
+    });
     document.getElementById('volets-container').classList.remove('open');
     _voletCloseTimer = null;
     _voletActiveItem = null;
-  }, 350);
+  }, delai + 350);
 }
 
 function closeVoletsFrom(level) {
@@ -8435,7 +8447,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.7 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.8 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
