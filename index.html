@@ -1956,7 +1956,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.51 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.52 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -7929,31 +7929,9 @@ function splashAnonymous() {
 }
 
 // ── Mot de passe oublié ───────────────────────────────────────
-async function splashForgotPassword(e) {
+function splashForgotPassword(e) {
   e.preventDefault();
-  const email = document.getElementById('splash-email').value.trim();
-  if (!email) {
-    splashMsg('Saisissez votre adresse e-mail ci-dessus puis cliquez sur ce lien.');
-    return;
-  }
-  splashMsg('Envoi en cours…', 'ok');
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    const rawText = await res.text();
-    console.log('[recover] status:', res.status, 'body:', rawText);
-    if (!res.ok) {
-      let msg = rawText;
-      try { const d = JSON.parse(rawText); msg = d.msg || d.error_description || d.message || d.error || rawText; } catch(_) {}
-      throw new Error(msg);
-    }
-    splashMsg(`✅ Un e-mail de réinitialisation a été envoyé à ${email}.`, 'ok');
-  } catch(err) {
-    splashMsg('❌ ' + err.message);
-  }
+  splashMsg('Version Béta Test — Fonction à venir — Pas encore implémentée', 'ok');
 }
 function splashShowRegister() {
   document.getElementById('splash-register-panel').style.display = 'flex';
@@ -8187,7 +8165,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.51 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.52 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
