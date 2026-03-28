@@ -2035,7 +2035,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.4 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.5 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5204,7 +5204,8 @@ function buildVolet0() {
     div.addEventListener('click', () => {
       document.querySelectorAll('#volet-0-list .volet-item').forEach(el => el.classList.remove('active'));
       div.classList.add('active');
-      if (hasChildren) openVolet1(fam);
+      // Niveau 0 = grande famille → ouvre toujours un volet (même vide)
+      if (fam.niveau === 0 || hasChildren) openVolet1(fam);
       else { closeVoletsFrom(1); addFromCatalogue(fam.id); }
     });
     list.appendChild(div);
@@ -5223,6 +5224,13 @@ function openVolet1(famille) {
 
   const enfants = catalogueData.filter(c => c.parentId === famille.id)
     .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+
+  if (enfants.length === 0) {
+    list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
+      Aucune rubrique<br>dans cette famille pour l'instant.</div>`;
+    document.getElementById('volet-1').classList.add('open');
+    return;
+  }
 
   enfants.forEach(rub => {
     const sousRubs = catalogueData.filter(c => c.parentId === rub.id);
@@ -8400,7 +8408,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.4 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.5 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
