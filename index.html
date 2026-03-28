@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.10 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.11 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2386,13 +2386,8 @@
 
   <!-- FC -->
   <div id="fc">
-    <div class="panel-header" style="justify-content:space-between">
+    <div class="panel-header">
       <span>ℹ️ Informations</span>
-      <button id="btn-new-evt" onclick="openCreateModal(state.centerDay, null)" title="Créer un événement" style="
-        background:rgba(200,169,110,0.12); border:1px solid rgba(200,169,110,0.35);
-        color:var(--accent); font-size:11px; padding:2px 8px; border-radius:3px;
-        cursor:pointer; font-family:'Source Sans 3',sans-serif; transition:all .2s;
-      ">✚ Événement</button>
     </div>
     <div id="fc-content">
       <div class="fc-empty" id="fc-empty">
@@ -4854,10 +4849,6 @@ function buildFA() {
       <div class="tl-drag-handle" title="Déplacer"><span></span><span></span><span></span></div>
       <div class="tl-checkbox${tl.enabled?' checked':''}" style="border-color:${tl.color};background:${tl.enabled?tl.color:'transparent'}"></div>
       <div class="tl-label" style="color:${tl.color}">${tl.title}</div>
-      <div class="tl-ref-row">
-        <span class="tl-ref-label">ref :</span>
-        <input type="text" class="tl-ref-input" value="${tl.ref || ''}" placeholder="identifiant…" maxlength="40">
-      </div>
       <div class="tl-count">${totalEvts}</div>
       <button class="tl-add-sub-btn" title="Ajouter une sous-rubrique">＋</button>
       <button class="tl-zoom-btn" title="Zoomer sur cette rubrique">◀▶</button>
