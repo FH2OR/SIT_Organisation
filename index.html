@@ -1323,11 +1323,11 @@
     position: fixed;
     left: 0; top: var(--header-h);
     height: calc(100vh - var(--header-h) - var(--footer-h));
-    display: flex; flex-direction: row;
+    display: none; flex-direction: row;
     z-index: 290;
     pointer-events: none;
   }
-  #volets-container.open { pointer-events: auto; }
+  #volets-container.open { display: flex; pointer-events: auto; }
 
   /* ── Volet générique ─────────────────────────────────────────── */
   .volet {
@@ -1336,13 +1336,16 @@
     background: #1a2640;
     border-right: 1px solid var(--border);
     box-shadow: 4px 0 20px rgba(0,0,0,.5);
-    display: flex; flex-direction: column;
-    transform: translateX(-100%);
-    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    display: none; flex-direction: column;
     flex-shrink: 0;
     overflow: hidden;
+    animation: voletIn .22s cubic-bezier(.4,0,.2,1);
   }
-  .volet.open { transform: translateX(0); }
+  @keyframes voletIn {
+    from { transform: translateX(-30px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+  .volet.open { display: flex; }
 
   /* Décalage en cascade : chaque volet suivant */
   .volet:nth-child(2) { background: #1e2c48; }
@@ -2032,7 +2035,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.3 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.4 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5172,16 +5175,22 @@ function buildVolet0() {
   const list = document.getElementById('volet-0-list');
   list.innerHTML = '';
 
+  console.log('[volets] catalogueData:', catalogueData.length, 'items');
+  console.log('[volets] niveaux:', catalogueData.map(c => `${c.title}=niv${c.niveau}`).join(', '));
+
   if (catalogueData.length === 0) {
     list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:12px">
       Importez un fichier Excel<br>pour alimenter le catalogue.</div>`;
     return;
   }
 
-  // Familles niveau 0
+  // Familles niveau 0, sinon toutes les racines sans parent
   const familles = catalogueData.filter(c => c.niveau === 0);
-  // Si pas encore de familles (import Excel sans niveau), afficher directement les racines
-  const items = familles.length > 0 ? familles : catalogueData.filter(c => !c.parentId && c.niveau !== 0);
+  const items = familles.length > 0
+    ? familles
+    : catalogueData.filter(c => !c.parentId);
+
+  console.log('[volets] familles/items à afficher:', items.map(c => c.title));
 
   items.forEach(fam => {
     const enfants = catalogueData.filter(c => c.parentId === fam.id);
@@ -5189,7 +5198,7 @@ function buildVolet0() {
     const div = document.createElement('div');
     div.className = 'volet-item';
     div.innerHTML = `
-      <div class="volet-dot" style="background:${fam.color}"></div>
+      <div class="volet-dot" style="background:${fam.color || '#8ecae6'}"></div>
       <span class="volet-label">${escHtml(fam.title)}</span>
       ${hasChildren ? '<span class="volet-arrow">›</span>' : ''}`;
     div.addEventListener('click', () => {
@@ -8391,7 +8400,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.3 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.4 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
