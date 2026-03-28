@@ -305,35 +305,95 @@
   #up-msg.err { display: block; background: rgba(231,76,60,0.10); color: #e74c3c; }
 
   /* ── Recherches dans le bandeau ─────────────────────────────── */
-  .srch-wrap {
-    position: relative;
-    display: flex; align-items: center;
+  /* ── Bouton Rechercher ───────────────────────────────────────── */
+  #btn-srch-toggle {
     flex-shrink: 0;
-  }
-  .srch-input {
-    height: 30px; padding: 0 28px 0 9px;
+    display: flex; align-items: center; gap: 5px;
+    height: 36px; padding: 0 12px;
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text); font-size: 12px;
-    font-family: 'Source Sans 3', sans-serif;
-    outline: none; transition: border-color .15s, width .2s;
-    width: 140px;
-  }
-  .srch-input:focus { border-color: var(--accent); width: 200px; }
-  .srch-input::placeholder { color: var(--text-dim); }
-  .srch-ico {
-    position: absolute; right: 7px;
-    font-size: 13px; color: var(--text-dim);
-    pointer-events: none;
-  }
-  .srch-label {
-    font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim);
-    position: absolute; top: -14px; left: 2px;
+    border-radius: 4px; cursor: pointer;
+    font-size: 13px; font-family: 'Source Sans 3', sans-serif;
+    color: var(--text-mid); transition: all .2s;
     white-space: nowrap;
   }
+  #btn-srch-toggle:hover,
+  #btn-srch-toggle.open { background: var(--border); color: var(--text); }
+
+  /* ── Fenêtre de recherche flottante ─────────────────────────── */
+  #srch-panel {
+    display: none; position: fixed; z-index: 850;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    border-radius: 8px;
+    width: 400px; max-width: 95vw;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    font-family: 'Source Sans 3', sans-serif;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #srch-panel.open { display: flex; }
+
+  #srch-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px 9px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #srch-panel-header .sp-title {
+    font-family: 'Cinzel', serif; font-size: 13px;
+    color: var(--accent); letter-spacing: 1px;
+  }
+  #srch-panel-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 16px; cursor: pointer; padding: 0; line-height: 1;
+  }
+  #srch-panel-close:hover { color: var(--text); }
+
+  #srch-panel-body {
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .srch-entry label {
+    display: block;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .8px;
+    color: var(--text-dim); margin-bottom: 6px;
+  }
+  .srch-entry-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .srch-entry-wrap input {
+    width: 100%; height: 32px; padding: 0 32px 0 10px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 13px;
+    font-family: 'Source Sans 3', sans-serif;
+    outline: none; transition: border-color .15s;
+  }
+  .srch-entry-wrap input:focus { border-color: var(--accent); }
+  .srch-entry-wrap .srch-ico {
+    position: absolute; right: 9px;
+    font-size: 14px; color: var(--text-dim); pointer-events: none;
+  }
+  .srch-hint {
+    font-size: 10px; color: var(--text-dim); margin-top: 4px;
+  }
+  #srch-canvas-count-2 {
+    font-size: 11px; color: var(--accent); margin-top: 4px; min-height: 14px;
+  }
+
+  /* résultats catalogue — dans le même panneau, sous les champs */
+  #srch-results-inner {
+    border-top: 1px solid var(--border);
+    overflow-y: auto; max-height: 50vh;
+    flex-shrink: 0;
+  }
+  #srch-results-inner::-webkit-scrollbar { width: 4px; }
+  #srch-results-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   /* ── Fenêtre résultats recherche globale ─────────────────────── */
   #search-global-panel {
@@ -1956,28 +2016,15 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.52 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.2 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
   <div id="z1-welcome" style="display:none;font-size:14px;color:var(--text-mid);line-height:1.4;padding:0 4px"></div>
   <div id="z1-right">
-    <!-- Recherche dans le canvas -->
-    <div class="srch-wrap" style="margin-top:14px">
-      <span class="srch-label">Canvas</span>
-      <input class="srch-input" id="srch-canvas" type="text" placeholder="🔍 Chercher…"
-             oninput="searchCanvas(this.value)" onkeydown="if(event.key==='Escape'){this.value='';searchCanvas('');}"
-             title="Recherche dans les rubriques et événements chargés">
-      <span class="srch-ico">⌕</span>
-    </div>
-    <!-- Recherche globale -->
-    <div class="srch-wrap" style="margin-top:14px">
-      <span class="srch-label">Global</span>
-      <input class="srch-input" id="srch-global" type="text" placeholder="🔍 Chercher…"
-             onkeydown="if(event.key==='Enter')searchGlobal(this.value)"
-             title="Recherche dans tous les événements Supabase (Entrée pour lancer)">
-      <span class="srch-ico">⌕</span>
-    </div>
+    <button id="btn-srch-toggle" onclick="toggleSrchPanel(event)" title="Ouvrir la recherche">
+      🔍 Rechercher
+    </button>
     <button class="btn-save-load" id="btn-measure" onclick="toggleMeasureMode()" title="Mesurer une durée entre deux dates (cliquer deux points sur la frise)">
       📐 Mesurer
     </button>
@@ -5981,6 +6028,9 @@ async function sbFetch(url, options = {}) {
 // ── Publier catalogue → Supabase ─────────────────────────────
 // Envoie toutes les rubriques et événements du catalogue local vers Supabase
 async function dbPushCatalogue() {
+  if (!isSuperuser()) {
+    dbSetStatus('❌ Accès refusé — réservé aux superusers.', 'err'); return;
+  }
   if (catalogueData.length === 0) {
     dbSetStatus('❌ Catalogue vide — importez d\'abord un fichier Excel.', 'err'); return;
   }
@@ -6147,6 +6197,7 @@ async function dbPullCatalogue() {
 
 // ── Sauvegarder l'état de la carte (vue + rubriques actives) ──
 async function dbSave() {
+  if (!currentUser) { dbSetStatus('❌ Connexion requise pour sauvegarder.', 'err'); return; }
   const nom = document.getElementById('db-save-name').value.trim() || 'Ma vue';
   dbSetStatus('Sauvegarde en cours…');
   const donnees = JSON.stringify({
@@ -6258,6 +6309,8 @@ async function dbLoadList() {
 // ── Supprimer une vue ─────────────────────────────────────────
 async function dbDelete(id, e) {
   e.stopPropagation();
+  if (!currentUser) { dbSetStatus('❌ Connexion requise.', 'err'); return; }
+  if (!id || !/^[0-9]+$/.test(String(id))) return;
   if (!confirm('Supprimer cette vue ?')) return;
   try {
     await sbFetch(sbUrl('frises_saves', `?id=eq.${id}`), { method: 'DELETE' });
@@ -7323,20 +7376,27 @@ async function upLoadUsers() {
       const roleLabel = role === 'superuser' ? '🔧' : role === 'abonne' ? '⭐' : '👤';
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.03);border-radius:4px;border:1px solid var(--border)';
-      row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${roleLabel} ${u.username}</span>
-        <span style="font-size:10px;color:var(--text-dim)">${u.prenom} ${u.nom}</span>
-        <select onchange="upSetUserRole('${u.id}', this.value)"
+      row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text)">${roleLabel} ${escHtml(u.username)}</span>
+        <span style="font-size:10px;color:var(--text-dim)">${escHtml(u.prenom)} ${escHtml(u.nom)}</span>
+        <select data-uid="${escHtml(u.id)}"
           style="font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:2px 4px;cursor:pointer">
           <option value="anonyme"   ${role==='anonyme'   ?'selected':''}>Anonyme</option>
           <option value="abonne"    ${role==='abonne'    ?'selected':''}>Abonné</option>
           <option value="superuser" ${role==='superuser' ?'selected':''}>Superuser</option>
         </select>`;
+      // Listener hors innerHTML pour éviter l'injection via u.id
+      row.querySelector('select').addEventListener('change', function() {
+        upSetUserRole(this.dataset.uid, this.value);
+      });
       container.appendChild(row);
     });
   } catch(e) { console.warn('[upLoadUsers]', e.message); }
 }
 
 async function upSetUserRole(uid, role) {
+  // Valider que uid est bien un UUID ou un identifiant alphanumérique safe
+  if (!uid || !/^[a-zA-Z0-9_\-]+$/.test(uid)) { upMsg('❌ Identifiant invalide.', 'err'); return; }
+  // Valider que role est une valeur attendue
   const map = {
     anonyme:   { statut: 'actif',      abonnement: 'gratuit' },
     abonne:    { statut: 'actif',      abonnement: 'abonne'  },
@@ -7354,6 +7414,55 @@ async function upSetUserRole(uid, role) {
     });
     upMsg(`✅ Rôle mis à jour.`);
   } catch(e) { upMsg('❌ ' + e.message, 'err'); }
+}
+
+// ── Fenêtre de recherche ──────────────────────────────────────
+function toggleSrchPanel(e) {
+  const panel = document.getElementById('srch-panel');
+  const btn   = document.getElementById('btn-srch-toggle');
+  if (panel.classList.contains('open')) { closeSrchPanel(); return; }
+
+  // Positionner sous le bouton
+  const rect = btn.getBoundingClientRect();
+  panel.style.top   = (rect.bottom + 6) + 'px';
+  const rightOffset = window.innerWidth - rect.right;
+  panel.style.right = Math.max(0, rightOffset) + 'px';
+  panel.style.left  = 'auto';
+  panel.classList.add('open');
+  btn.classList.add('open');
+
+  setTimeout(() => {
+    document.getElementById('srch-canvas').focus();
+    document.addEventListener('click', _srchPanelOutside);
+  }, 0);
+}
+
+function closeSrchPanel() {
+  document.getElementById('srch-panel').classList.remove('open');
+  document.getElementById('btn-srch-toggle').classList.remove('open');
+  document.removeEventListener('click', _srchPanelOutside);
+}
+
+function _srchPanelOutside(e) {
+  const panel = document.getElementById('srch-panel');
+  const btn   = document.getElementById('btn-srch-toggle');
+  if (!panel.contains(e.target) && e.target !== btn) closeSrchPanel();
+}
+
+// Lancer la recherche globale depuis le panneau
+async function searchGlobalInPanel(q) {
+  const inner = document.getElementById('srch-results-inner');
+  const list  = document.getElementById('sgp-list');
+  inner.style.display = 'block';
+  list.innerHTML = '<div id="sgp-empty">Recherche en cours…</div>';
+  await searchGlobal(q);
+}
+
+// Fermer la recherche globale (compatibilité avec closeSearchGlobal)
+function closeSearchGlobal() {
+  document.getElementById('srch-results-inner').style.display = 'none';
+  document.getElementById('sgp-list').innerHTML = '';
+  document.getElementById('srch-global').value = '';
 }
 
 // ── Helpers messages ──────────────────────────────────────────
@@ -7399,13 +7508,12 @@ function searchCanvas(q) {
     });
 
     // Afficher le compteur sous le champ
-    let cEl = document.getElementById('srch-canvas-count');
+    let cEl = document.getElementById('srch-canvas-count-2');
     if (!cEl) {
       cEl = document.createElement('div');
-      cEl.id = 'srch-canvas-count';
-      cEl.style.cssText = 'position:absolute;top:32px;right:0;font-size:10px;color:var(--accent);' +
-        'background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:1px 6px;white-space:nowrap;z-index:10';
-      document.getElementById('srch-canvas')?.parentElement?.appendChild(cEl);
+      cEl.id = 'srch-canvas-count-2';
+      cEl.style.cssText = 'font-size:10px;margin-top:3px;';
+      document.getElementById('srch-canvas')?.parentElement?.after(cEl);
     }
     cEl.textContent = count ? `${count} résultat${count > 1 ? 's' : ''}` : 'Aucun résultat';
     cEl.style.color = count ? 'var(--accent)' : '#e74c3c';
@@ -7441,18 +7549,8 @@ async function searchGlobal(q) {
   q = (q || '').trim();
   if (q.length < 2) return;
 
-  const panel = document.getElementById('search-global-panel');
-  const list  = document.getElementById('sgp-list');
+  const list = document.getElementById('sgp-list');
   list.innerHTML = '<div id="sgp-empty">Recherche en cours…</div>';
-
-  const inp  = document.getElementById('srch-global');
-  const rect = inp.getBoundingClientRect();
-  // Ancrer le panneau à droite de l'écran, aligné sur le bord droit du champ
-  const rightOffset = window.innerWidth - rect.right;
-  panel.style.top   = (rect.bottom + 6) + 'px';
-  panel.style.right = Math.max(0, rightOffset) + 'px';
-  panel.style.left  = 'auto';
-  panel.classList.add('open');
 
   try {
     // Fetch avec le token connecté si disponible (contourne RLS anon)
@@ -7497,29 +7595,33 @@ async function searchGlobal(q) {
       const cat       = rubMap[rubId] || rubMap[String(rubId)] || rubMap[Number(rubId)];
       const rubTitle  = cat ? cat.title : (rubId || '—');
       const parentCat = cat?.parentId ? (rubMap[cat.parentId] || rubMap[String(cat.parentId)]) : null;
-      const rubLabel  = parentCat ? `${parentCat.title} › ${rubTitle}` : rubTitle;
-      const color     = evt.couleur || cat?.color || '#8ecae6';
-      const dateStr   = evt.date_debut ? String(evt.date_debut) : '';
+      const rubLabel  = parentCat ? `${escHtml(parentCat.title)} › ${escHtml(rubTitle)}` : escHtml(rubTitle);
+      const color     = /^#[0-9a-fA-F]{3,6}$/.test(evt.couleur || '') ? evt.couleur : (cat?.color || '#8ecae6');
+      const dateStr   = escHtml(evt.date_debut ? String(evt.date_debut) : '');
       const alreadyLoaded = !!state.timelines.find(t => String(t.id) === String(rubId) && t.enabled);
       const loadId    = cat ? String(cat.id) : null;
 
       return `<div class="sgp-row">
         <div class="sgp-dot" style="background:${color}"></div>
         <div class="sgp-info">
-          <div class="sgp-evt-title">${evt.titre || '—'}</div>
+          <div class="sgp-evt-title">${escHtml(evt.titre || '—')}</div>
           <div class="sgp-rub-title">📂 ${rubLabel}</div>
         </div>
         <div class="sgp-date">${dateStr}</div>
         ${alreadyLoaded
           ? `<button class="sgp-btn sgp-btn-done" disabled>✓ Chargé</button>`
           : loadId
-            ? `<button class="sgp-btn sgp-btn-load" onclick="sgpLoad('${loadId}', this)">＋ Charger</button>`
+            ? `<button class="sgp-btn sgp-btn-load" data-rub-id="${escHtml(loadId)}">＋ Charger</button>`
             : `<span style="font-size:11px;color:var(--text-dim)">—</span>`
         }
       </div>`;
     }).join('');
 
     list.innerHTML = header + rows;
+    // Attacher les listeners après injection (évite onclick inline avec IDs)
+    list.querySelectorAll('.sgp-btn-load').forEach(btn => {
+      btn.addEventListener('click', function() { sgpLoad(this.dataset.rubId, this); });
+    });
 
   } catch(e) {
     list.innerHTML = `<div id="sgp-empty">Erreur : ${e.message}</div>`;
@@ -7753,17 +7855,20 @@ async function loadUsersList() {
       row.innerHTML = `
         <div style="flex:1;min-width:0">
           <div style="font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            ${esc(u.prenom)} ${esc(u.nom)}<span style="color:var(--text-dim);font-size:10px"> @${esc(u.username)}</span>
+            ${escHtml(u.prenom)} ${escHtml(u.nom)}<span style="color:var(--text-dim);font-size:10px"> @${escHtml(u.username)}</span>
           </div>
-          <div style="font-size:10px;color:${roleColor};margin-top:1px">${roleLabel}</div>
+          <div style="font-size:10px;color:${roleColor};margin-top:1px">${escHtml(roleLabel)}</div>
         </div>
-        <select onchange="setUserRole('${u.id}', this.value)"
+        <select data-uid="${escHtml(u.id)}"
           style="font-size:11px;padding:2px 4px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:3px;cursor:pointer">
           <option value="anonyme"   ${role==='anonyme'   ?'selected':''}>Anonyme</option>
           <option value="abonne"    ${role==='abonne'    ?'selected':''}>Abonné</option>
           <option value="superuser" ${role==='superuser' ?'selected':''}>Superuser</option>
         </select>
       `;
+      row.querySelector('select').addEventListener('change', function() {
+        setUserRole(this.dataset.uid, this.value);
+      });
       container.appendChild(row);
     });
   } catch(e) {
@@ -7773,6 +7878,7 @@ async function loadUsersList() {
 
 async function setUserRole(userId, newRole) {
   if (!isSuperuser()) return;
+  if (!userId || !/^[a-zA-Z0-9_\-]+$/.test(userId)) return;
   if (userId === currentUser?.id && newRole !== 'superuser') {
     if (!confirm('Vous allez modifier votre propre rôle. Continuer ?')) { await loadUsersList(); return; }
   }
@@ -8086,8 +8192,8 @@ async function showWelcomeMessage() {
   }
 
   const ligneBonjour = joursSep !== null && joursSep > 0
-    ? `👋 Bonjour <strong>${username}</strong>. Voilà <strong>${joursSep} jour${joursSep > 1 ? 's' : ''}</strong> que nous nous sommes rencontrés.`
-    : `👋 Bonjour <strong>${username}</strong>. Bienvenue !`;
+    ? `👋 Bonjour <strong>${escHtml(username)}</strong>. Voilà <strong>${joursSep} jour${joursSep > 1 ? 's' : ''}</strong> que nous nous sommes rencontrés.`
+    : `👋 Bonjour <strong>${escHtml(username)}</strong>. Bienvenue !`;
 
   // Choisir un événement aléatoire avec une date
   let ligneSavoir = '';
@@ -8111,7 +8217,7 @@ async function showWelcomeMessage() {
           const duree = diffAns >= 2
             ? `<strong>${diffAns} ans</strong> (${diffDays.toLocaleString('fr-FR')} jours)`
             : `<strong>${diffDays} jours</strong>`;
-          ligneSavoir = `💡 Savais-tu qu'il s'est passé ${duree} entre <em>${evt.titre}</em> et aujourd'hui ?`;
+          ligneSavoir = `💡 Savais-tu qu'il s'est passé ${duree} entre <em>${escHtml(evt.titre)}</em> et aujourd'hui ?`;
         }
       }
     }
@@ -8165,19 +8271,46 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.52 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.2 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
 </div>
 
-<!-- ── Fenêtre résultats recherche globale ── -->
-<div id="search-global-panel">
-  <div id="sgp-header">
-    <span class="sgp-title">🔍 Résultats — recherche globale</span>
-    <button id="sgp-close" onclick="closeSearchGlobal()">✕</button>
+<!-- ── Fenêtre de recherche ── -->
+<div id="srch-panel">
+  <div id="srch-panel-header">
+    <span class="sp-title">🔍 Recherche</span>
+    <button id="srch-panel-close" onclick="closeSrchPanel()">✕</button>
   </div>
-  <div id="sgp-list"></div>
+  <div id="srch-panel-body">
+    <!-- Champ 1 : dans la grille -->
+    <div class="srch-entry">
+      <label>Recherche dans la grille</label>
+      <div class="srch-entry-wrap">
+        <input type="text" id="srch-canvas" placeholder="Chercher dans les frises chargées…"
+               oninput="searchCanvas(this.value)"
+               onkeydown="if(event.key==='Escape'){this.value='';searchCanvas('');}">
+        <span class="srch-ico">⌕</span>
+      </div>
+      <div id="srch-canvas-count-2"></div>
+      <div class="srch-hint">Surligne les résultats · Escape pour effacer</div>
+    </div>
+    <!-- Champ 2 : dans tout le catalogue -->
+    <div class="srch-entry">
+      <label>Recherche dans tout le catalogue</label>
+      <div class="srch-entry-wrap">
+        <input type="text" id="srch-global" placeholder="Chercher dans tous les événements…"
+               onkeydown="if(event.key==='Enter')searchGlobalInPanel(this.value)">
+        <span class="srch-ico">⌕</span>
+      </div>
+      <div class="srch-hint">Appuyer sur Entrée pour lancer · insensible aux accents et à la casse</div>
+    </div>
+  </div>
+  <!-- Résultats catalogue — s'affichent dans le même panneau -->
+  <div id="srch-results-inner" style="display:none">
+    <div id="sgp-list"></div>
+  </div>
 </div>
 
 </body>
