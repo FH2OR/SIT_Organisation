@@ -1956,7 +1956,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.50 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.8.51 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -7943,9 +7943,12 @@ async function splashForgotPassword(e) {
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
+    const rawText = await res.text();
+    console.log('[recover] status:', res.status, 'body:', rawText);
     if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.msg || d.error_description || d.message || d.error || JSON.stringify(d));
+      let msg = rawText;
+      try { const d = JSON.parse(rawText); msg = d.msg || d.error_description || d.message || d.error || rawText; } catch(_) {}
+      throw new Error(msg);
     }
     splashMsg(`✅ Un e-mail de réinitialisation a été envoyé à ${email}.`, 'ok');
   } catch(err) {
@@ -8184,7 +8187,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.8.50 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.8.51 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
