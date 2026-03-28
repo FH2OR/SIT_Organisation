@@ -1284,6 +1284,7 @@
   .db-status.ok  { display: block; background: rgba(82,183,136,0.15); color: #52b788; }
   .db-status.err { display: block; background: rgba(231,76,60,0.12);  color: #e74c3c; }
   /* ── Catalogue panel (slide-in from left on hover) ─────────── */
+  /* ── Trigger bord gauche ────────────────────────────────────── */
   #catalogue-trigger {
     position: fixed;
     left: 0;
@@ -1298,10 +1299,8 @@
   #catalogue-trigger::after {
     content: '📚';
     position: absolute;
-    top: 50%;
-    left: 6px;
+    top: 50%; left: 6px;
     transform: translateY(-50%);
-    font-size: 11px;
     writing-mode: vertical-rl;
     color: rgba(200,169,110,0.5);
     letter-spacing: 2px;
@@ -1309,83 +1308,126 @@
     font-size: 9px;
     white-space: nowrap;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity .2s;
+    opacity: 0; transition: opacity .2s;
   }
   #catalogue-trigger:hover::after,
-  #catalogue-trigger.open::after {
-    opacity: 1;
-  }
+  #catalogue-trigger.open::after { opacity: 1; }
   #catalogue-trigger:hover,
   #catalogue-trigger.open {
     background: linear-gradient(to right, rgba(200,169,110,0.55), transparent);
     width: 8px;
   }
 
-  #catalogue-panel {
+  /* ── Conteneur des volets ────────────────────────────────────── */
+  #volets-container {
     position: fixed;
-    left: -320px;
-    top: var(--header-h);
-    width: 300px;
+    left: 0; top: var(--header-h);
     height: calc(100vh - var(--header-h) - var(--footer-h));
-    background: #1e2a40;
-    border-right: 1px solid var(--border);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+    display: flex; flex-direction: row;
     z-index: 290;
-    display: flex;
-    flex-direction: column;
-    transition: left .28s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+  }
+  #volets-container.open { pointer-events: auto; }
+
+  /* ── Volet générique ─────────────────────────────────────────── */
+  .volet {
+    width: 220px;
+    height: 100%;
+    background: #1a2640;
+    border-right: 1px solid var(--border);
+    box-shadow: 4px 0 20px rgba(0,0,0,.5);
+    display: flex; flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    flex-shrink: 0;
     overflow: hidden;
   }
-  #catalogue-panel.open {
-    left: 0;
-  }
-  #catalogue-header {
-    padding: 10px 12px 8px;
+  .volet.open { transform: translateX(0); }
+
+  /* Décalage en cascade : chaque volet suivant */
+  .volet:nth-child(2) { background: #1e2c48; }
+  .volet:nth-child(3) { background: #212f4e; }
+
+  .volet-header {
+    padding: 10px 12px 9px;
     background: var(--bg3);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-  }
-  #catalogue-header .cat-title {
-    font-family: 'Cinzel', serif;
-    font-size: 11px; font-weight: 600;
-    color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase;
-    margin-bottom: 8px;
     display: flex; align-items: center; gap: 6px;
   }
-  #catalogue-header .cat-title button {
-    margin-left: auto;
-    background: transparent; border: none;
-    color: var(--text-dim); font-size: 14px; cursor: pointer;
-    line-height: 1; padding: 2px 4px; border-radius: 3px;
-    transition: color .15s;
+  .volet-header .volet-icon {
+    font-size: 14px; flex-shrink: 0;
   }
-  #catalogue-header .cat-title button:hover { color: var(--text); }
-  #cat-search {
-    width: 100%;
-    padding: 6px 10px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 12px;
-    border-radius: 4px;
-    font-family: 'Source Sans 3', sans-serif;
-    box-sizing: border-box;
-    transition: border-color .2s;
+  .volet-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px; font-weight: 600;
+    color: var(--accent); letter-spacing: 1px;
+    text-transform: uppercase; flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  #cat-search:focus { outline: none; border-color: var(--accent); }
-  #cat-search::placeholder { color: var(--text-dim); }
-  #cat-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px 0;
+  .volet-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 13px; cursor: pointer; padding: 2px 4px;
+    border-radius: 3px; line-height: 1; flex-shrink: 0;
   }
-  #cat-list::-webkit-scrollbar { width: 4px; }
-  #cat-list::-webkit-scrollbar-track { background: transparent; }
-  #cat-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .volet-close:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 
-  /* ── Pied du catalogue : bouton import Excel ────────────────── */
-  #cat-footer {
+  .volet-list {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+  .volet-list::-webkit-scrollbar { width: 4px; }
+  .volet-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Items dans les volets ───────────────────────────────────── */
+  .volet-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background .12s;
+    user-select: none;
+  }
+  .volet-item:hover { background: rgba(255,255,255,0.07); }
+  .volet-item.active { background: rgba(255,255,255,0.09); }
+  .volet-item.already { opacity: 0.45; }
+
+  .volet-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    flex-shrink: 0; border: 1.5px solid rgba(255,255,255,.2);
+  }
+  .volet-label {
+    font-size: 12px; color: var(--text); flex: 1;
+    line-height: 1.3;
+  }
+  .volet-arrow {
+    font-size: 10px; color: var(--text-dim); flex-shrink: 0;
+  }
+  .volet-add-btn {
+    flex-shrink: 0; font-size: 13px; font-weight: 700;
+    width: 22px; height: 22px; border-radius: 4px;
+    background: rgba(212,176,122,0.12);
+    border: 1px solid rgba(212,176,122,0.35);
+    color: var(--accent); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .volet-add-btn:hover {
+    background: rgba(212,176,122,0.28);
+    border-color: var(--accent);
+  }
+  .volet-check {
+    font-size: 11px; color: var(--text-dim); flex-shrink: 0;
+  }
+  .volet-acces-badge {
+    font-size: 9px; color: var(--accent);
+    border: 1px solid rgba(200,169,110,0.4);
+    padding: 0 3px; border-radius: 3px; flex-shrink: 0;
+  }
+  .volet-item.locked .volet-label { color: var(--text-dim); opacity: 0.6; }
+  .volet-item.locked .volet-dot   { opacity: 0.35; }
+
+  /* ── Pied du volet 0 ─────────────────────────────────────────── */
+  #volet-footer {
     flex-shrink: 0;
     padding: 10px 12px;
     border-top: 1px solid var(--border);
@@ -1400,49 +1442,23 @@
     color: var(--accent);
     font-size: 12px; font-weight: 600;
     font-family: 'Source Sans 3', sans-serif;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all .2s;
-    letter-spacing: .3px;
+    border-radius: 4px; cursor: pointer;
+    transition: all .2s; letter-spacing: .3px;
   }
   #btn-import-excel:hover {
     background: rgba(200,169,110,0.18);
-    border-style: solid;
-    border-color: var(--accent);
+    border-style: solid; border-color: var(--accent);
   }
-  #btn-import-excel:active { transform: scale(.98); }
   #cat-import-info {
-    margin-top: 6px;
-    font-size: 10px;
-    color: var(--text-dim);
-    text-align: center;
-    min-height: 14px;
-    transition: color .3s;
+    margin-top: 6px; font-size: 10px;
+    color: var(--text-dim); text-align: center; min-height: 14px;
   }
   #cat-import-info.ok  { color: #52b788; }
   #cat-import-info.err { color: #e74c3c; }
-  .cat-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    transition: background .15s;
-    user-select: none;
-  }
-  .cat-item:hover { background: rgba(255,255,255,0.05); }
-  .cat-item.cat-sub {
-    padding-left: 26px;
-    background: rgba(0,0,0,0.12);
-    border-left: 2px solid var(--border);
-    margin-left: 10px;
-  }
-  .cat-item.cat-sub:hover { background: rgba(255,255,255,0.03); }
-  .cat-item.cat-already { opacity: 0.4; cursor: default; pointer-events: none; }
-  .cat-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    flex-shrink: 0; border: 1.5px solid rgba(255,255,255,.2);
-  }
-  .cat-label { font-size: 12px; line-height: 1.3; flex: 1; }
+
+  /* anciens sélecteurs conservés pour compatibilité */
+  #cat-search { display: none; }
+  #cat-list   { display: none; }
   .cat-label.cat-sub-label { font-size: 11px; color: var(--text-mid); }
   .cat-add-btn {
     flex-shrink: 0;
@@ -2016,7 +2032,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.2 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.3 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2279,26 +2295,59 @@
 <!-- Catalogue trigger (bord gauche hover zone) -->
 <div id="catalogue-trigger"></div>
 
-<!-- Catalogue panel (slide-in) -->
-<div id="catalogue-panel">
-  <div id="catalogue-header">
-    <div class="cat-title">
-      📚 Catalogue des rubriques
-      <button onclick="closeCatalogue()" title="Fermer">✕</button>
+<!-- Système de volets catalogue -->
+<div id="volets-container">
+
+  <!-- Volet 0 : grandes familles (toujours le premier) -->
+  <div class="volet" id="volet-0">
+    <div class="volet-header">
+      <span class="volet-icon">📚</span>
+      <span class="volet-title">Catalogue</span>
+      <button class="volet-close" onclick="closeAllVolets()" title="Fermer">✕</button>
     </div>
-    <input type="text" id="cat-search" placeholder="🔍  Rechercher une rubrique…">
+    <div class="volet-list" id="volet-0-list"></div>
+    <div id="volet-footer">
+      <button id="btn-import-excel" onclick="importExcel()" title="Importer depuis Excel">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0">
+          <rect x="1" y="1" width="12" height="12" rx="1.5"/>
+          <path d="M4 5l3 4 3-4M7 4v6"/>
+        </svg>
+        Importer un fichier Excel
+      </button>
+      <div id="cat-import-info"></div>
+    </div>
+  </div>
+
+  <!-- Volet 1 : rubriques d'une famille -->
+  <div class="volet" id="volet-1">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-1-icon"></span>
+      <span class="volet-title" id="volet-1-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(1)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-1-list"></div>
+  </div>
+
+  <!-- Volet 2 : sous-rubriques -->
+  <div class="volet" id="volet-2">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-2-icon"></span>
+      <span class="volet-title" id="volet-2-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(2)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-2-list"></div>
+  </div>
+
+</div>
+
+<!-- Éléments conservés pour compatibilité JS existant -->
+<div id="catalogue-panel" style="display:none">
+  <div id="catalogue-header" style="display:none">
+    <div class="cat-title">📚 Catalogue<button onclick="closeCatalogue()">✕</button></div>
+    <input type="text" id="cat-search">
   </div>
   <div id="cat-list"></div>
-  <div id="cat-footer">
-    <button id="btn-import-excel" onclick="importExcel()" title="Charger les rubriques depuis un fichier Excel (.xlsx)">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0">
-        <rect x="1" y="1" width="12" height="12" rx="1.5"/>
-        <path d="M4 5l3 4 3-4M7 4v6"/>
-      </svg>
-      Importer un fichier Excel
-    </button>
-    <div id="cat-import-info"></div>
-  </div>
+  <div id="cat-footer" style="display:none"></div>
 </div>
 
 <!-- Central layout -->
@@ -4184,6 +4233,10 @@ canvas.addEventListener('wheel', e => {
 }, { passive: false });
 
 canvas.addEventListener('mousedown', e => {
+  // Fermer les volets si ouverts
+  if (document.getElementById('volets-container').classList.contains('open')) {
+    closeAllVolets();
+  }
   if (e.button === 1 || (e.button === 0 && e.altKey)) {
     e.preventDefault();
     state.pan.active = true;
@@ -5071,133 +5124,196 @@ function openSubForm(parentId) {
 // Données du catalogue (alimentées lors de l'import Excel)
 let catalogueData = []; // [{ id, title, color, parentId?, defaultType? }, …]
 
+// ═══════════════════════════════════════════════════════════════
+//  SYSTÈME DE VOLETS CATALOGUE
+// ═══════════════════════════════════════════════════════════════
+
 function openCatalogue() {
-  document.getElementById('catalogue-panel').classList.add('open');
+  document.getElementById('volets-container').classList.add('open');
   document.getElementById('catalogue-trigger').classList.add('open');
-  document.getElementById('cat-search').focus();
+  document.getElementById('volet-0').classList.add('open');
+  buildVolet0();
 }
 
 function closeCatalogue() {
-  document.getElementById('catalogue-panel').classList.remove('open');
-  document.getElementById('catalogue-trigger').classList.remove('open');
+  closeAllVolets();
 }
 
-function buildCatalogueList(filter) {
-  const list = document.getElementById('cat-list');
-  list.innerHTML = '';
-  const q = (filter || '').toLowerCase().trim();
+function closeAllVolets() {
+  document.getElementById('volets-container').classList.remove('open');
+  document.getElementById('catalogue-trigger').classList.remove('open');
+  ['volet-0','volet-1','volet-2'].forEach(id => {
+    document.getElementById(id).classList.remove('open', 'active');
+  });
+  _voletActiveItem = null;
+}
 
-  // Catalogue vide — aucun Excel importé
+function closeVoletsFrom(level) {
+  for (let i = level; i <= 2; i++) {
+    document.getElementById(`volet-${i}`).classList.remove('open', 'active');
+  }
+  if (level === 0) closeAllVolets();
+  // Désactiver l'item actif du niveau précédent
+  if (level === 2) {
+    document.querySelectorAll('#volet-1-list .volet-item.active')
+      .forEach(el => el.classList.remove('active'));
+  }
+  if (level === 1) {
+    document.querySelectorAll('#volet-0-list .volet-item.active')
+      .forEach(el => el.classList.remove('active'));
+    closeVoletsFrom(2);
+  }
+}
+
+let _voletActiveItem = null;
+
+// ── Volet 0 : grandes familles ────────────────────────────────
+function buildVolet0() {
+  const list = document.getElementById('volet-0-list');
+  list.innerHTML = '';
+
   if (catalogueData.length === 0) {
-    list.innerHTML = `
-      <div class="cat-empty">
-        <div style="font-size:24px;margin-bottom:10px;opacity:.4">📊</div>
-        Importez un fichier Excel via<br>
-        <strong style="color:var(--accent)">📊 Import Excel</strong><br>
-        pour alimenter ce catalogue.
-      </div>`;
+    list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:12px">
+      Importez un fichier Excel<br>pour alimenter le catalogue.</div>`;
     return;
   }
 
-  const roots = catalogueData.filter(r => !r.parentId);
+  // Familles niveau 0
+  const familles = catalogueData.filter(c => c.niveau === 0);
+  // Si pas encore de familles (import Excel sans niveau), afficher directement les racines
+  const items = familles.length > 0 ? familles : catalogueData.filter(c => !c.parentId && c.niveau !== 0);
 
-  // IDs déjà actifs dans la carte (enabled seulement)
+  items.forEach(fam => {
+    const enfants = catalogueData.filter(c => c.parentId === fam.id);
+    const hasChildren = enfants.length > 0;
+    const div = document.createElement('div');
+    div.className = 'volet-item';
+    div.innerHTML = `
+      <div class="volet-dot" style="background:${fam.color}"></div>
+      <span class="volet-label">${escHtml(fam.title)}</span>
+      ${hasChildren ? '<span class="volet-arrow">›</span>' : ''}`;
+    div.addEventListener('click', () => {
+      document.querySelectorAll('#volet-0-list .volet-item').forEach(el => el.classList.remove('active'));
+      div.classList.add('active');
+      if (hasChildren) openVolet1(fam);
+      else { closeVoletsFrom(1); addFromCatalogue(fam.id); }
+    });
+    list.appendChild(div);
+  });
+}
+
+// ── Volet 1 : rubriques d'une famille ────────────────────────
+function openVolet1(famille) {
+  closeVoletsFrom(2);
+  document.getElementById('volet-1-icon').textContent = '';
+  document.getElementById('volet-1-title').textContent = famille.title;
+
+  const list = document.getElementById('volet-1-list');
+  list.innerHTML = '';
   const activeIds = new Set(state.timelines.filter(t => t.enabled).map(t => t.id));
 
-  let anyVisible = false;
+  const enfants = catalogueData.filter(c => c.parentId === famille.id)
+    .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
 
-  roots.forEach(root => {
-    const subs = catalogueData.filter(s => s.parentId === root.id);
+  enfants.forEach(rub => {
+    const sousRubs = catalogueData.filter(c => c.parentId === rub.id);
+    const hasChildren = sousRubs.length > 0;
+    const already = activeIds.has(rub.id);
+    const accesVal = (rub.acces || 'public').toLowerCase();
+    const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
 
-    const rootMatch = !q || root.title.toLowerCase().includes(q);
-    const matchingSubs = subs.filter(s => !q || s.title.toLowerCase().includes(q));
-    if (!rootMatch && matchingSubs.length === 0) return;
+    const div = document.createElement('div');
+    div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
 
-    anyVisible = true;
+    div.innerHTML = `
+      <div class="volet-dot" style="background:${rub.color}"></div>
+      <span class="volet-label">${escHtml(rub.title)}</span>
+      ${locked ? '<span class="volet-acces-badge">⭐</span>' : ''}
+      ${hasChildren
+        ? '<span class="volet-arrow">›</span>'
+        : already
+          ? '<span class="volet-check">✓</span>'
+          : locked ? '' : `<button class="volet-add-btn" title="Ajouter à la frise">＋</button>`}`;
 
-    // Droits d'accès : on vérifie si la rubrique est restreinte aux abonnés
-    const accesVal    = (root.acces || 'public').toLowerCase().trim();
-    const isRestricted = accesVal === 'abonne' || accesVal === 'abonnement';
-    const canAdd      = !isRestricted || isAbonne();
-
-    // Visuel selon accès
-    const accesBg   = isRestricted ? 'rgba(200,169,110,0.10)' : 'transparent';
-    const accesLabel = isRestricted && isSuperuser()
-      ? '<span style="font-size:9px;color:#c8a96e;margin-left:4px;border:1px solid rgba(200,169,110,0.4);padding:0 3px;border-radius:3px">⭐ abonné</span>'
-      : '';
-
-    const el = document.createElement('div');
-    const alreadyRoot = activeIds.has(root.id);
-    el.className = 'cat-item' + (alreadyRoot ? ' cat-already' : '');
-    el.style.background = accesBg;
-    if (isRestricted) el.style.borderLeft = '3px solid rgba(200,169,110,0.4)';
-
-    // Bouton ⚙ toggle accès (superuser seulement)
-    const accesToggle = isSuperuser()
-      ? `<button class="cat-acces-btn" title="Changer l'accès" style="font-size:9px;padding:1px 5px;border-radius:3px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-dim);margin-left:4px;flex-shrink:0">⚙</button>`
-      : '';
-
-    el.innerHTML = `
-      <div class="cat-dot" style="background:${root.color};opacity:${!canAdd ? '0.35' : '1'}"></div>
-      <div class="cat-label" style="flex:1;${!canAdd ? 'color:var(--text-dim);opacity:0.6' : ''}">${root.title}${accesLabel}</div>
-      ${accesToggle}
-      ${alreadyRoot
-        ? '<span style="font-size:10px;color:var(--text-dim)">✓</span>'
-        : canAdd
-        ? `<button class="cat-add-btn" title="Ajouter à la carte">＋</button>`
-        : ''}
-    `;
-
-    if (!alreadyRoot && canAdd) {
-      const addBtn = el.querySelector('.cat-add-btn');
-      if (addBtn) addBtn.addEventListener('click', e => { e.stopPropagation(); addFromCatalogue(root.id); });
+    if (locked) {
+      div.addEventListener('click', () => openSubscribePopup());
+    } else if (hasChildren) {
+      div.addEventListener('click', () => {
+        document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
+        div.classList.add('active');
+        openVolet2(rub);
+      });
+    } else if (!already) {
+      const btn = div.querySelector('.volet-add-btn');
+      if (btn) btn.addEventListener('click', e => {
+        e.stopPropagation();
+        addFromCatalogue(rub.id, famille.id);
+        div.className = 'volet-item already';
+        div.querySelector('.volet-add-btn')?.remove();
+        const check = document.createElement('span');
+        check.className = 'volet-check'; check.textContent = '✓';
+        div.appendChild(check);
+      });
     }
-
-    // Toggle acces superuser
-    const accesBtn = el.querySelector('.cat-acces-btn');
-    if (accesBtn) accesBtn.addEventListener('click', async e => {
-      e.stopPropagation();
-      const cat = catalogueData.find(c => c.id === root.id);
-      if (!cat) return;
-      const newAcces = (cat.acces === 'abonnement' || cat.acces === 'abonne') ? 'public' : 'abonnement';
-      cat.acces = newAcces;
-      try {
-        await sbFetch(sbUrl('rubriques', `?id=eq.${encodeURIComponent(root.id)}`),
-          { method: 'PATCH', body: JSON.stringify({ acces: newAcces }) });
-      } catch(err) { console.warn('[acces]', err); }
-      buildCatalogueList(document.getElementById('cat-search').value);
-    });
-
-    list.appendChild(el);
-
-    // Sous-rubriques
-    const subsToShow = rootMatch ? subs : matchingSubs;
-    subsToShow.forEach(sub => {
-      const alreadySub = activeIds.has(sub.id);
-      const subAcces   = sub.acces || 'public';
-      const subLocked  = (subAcces === 'abonnement' || subAcces === 'abonne') && !isAbonne();
-      const subEl = document.createElement('div');
-      subEl.className = 'cat-item cat-sub' + (alreadySub ? ' cat-already' : '') + (subLocked ? ' locked' : '');
-      const typeIcon = sub.defaultType === 'range' ? '▬' : '◉';
-      subEl.innerHTML = `
-        <div class="cat-dot" style="background:${sub.color};opacity:${subLocked ? '0.35' : '1'}"></div>
-        <div class="cat-label cat-sub-label" style="${subLocked ? 'color:var(--text-dim);opacity:0.6' : ''}">${typeIcon} ${sub.title}</div>
-        ${!alreadySub && !subLocked ? `<button class="cat-add-btn" title="Ajouter à la carte">＋</button>` :
-          alreadySub ? '<span style="font-size:10px;color:var(--text-dim)">✓</span>' : ''}
-      `;
-      if (!alreadySub && subLocked) {
-        subEl.style.cursor = 'pointer';
-        subEl.addEventListener('click', () => openSubscribePopup());
-      } else if (!alreadySub) {
-        const addBtn = subEl.querySelector('.cat-add-btn');
-        if (addBtn) addBtn.addEventListener('click', e => { e.stopPropagation(); addFromCatalogue(sub.id, root.id); });
-      }
-      list.appendChild(subEl);
-    });
+    list.appendChild(div);
   });
 
-  if (catalogueData.length > 0 && !anyVisible) {
-    list.innerHTML = `<div class="cat-empty">Aucune rubrique ne correspond à « ${escHtml(q)} »</div>`;
+  document.getElementById('volet-1').classList.add('open');
+}
+
+// ── Volet 2 : sous-rubriques ──────────────────────────────────
+function openVolet2(rubrique) {
+  document.getElementById('volet-2-icon').textContent = '';
+  document.getElementById('volet-2-title').textContent = rubrique.title;
+
+  const list = document.getElementById('volet-2-list');
+  list.innerHTML = '';
+  const activeIds = new Set(state.timelines.filter(t => t.enabled).map(t => t.id));
+
+  const sousRubs = catalogueData.filter(c => c.parentId === rubrique.id)
+    .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+
+  sousRubs.forEach(sub => {
+    const already = activeIds.has(sub.id);
+    const accesVal = (sub.acces || 'public').toLowerCase();
+    const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
+    const typeIcon = sub.defaultType === 'range' ? '▬' : '◉';
+
+    const div = document.createElement('div');
+    div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
+    div.innerHTML = `
+      <div class="volet-dot" style="background:${sub.color}"></div>
+      <span class="volet-label">${typeIcon} ${escHtml(sub.title)}</span>
+      ${locked ? '<span class="volet-acces-badge">⭐</span>' : ''}
+      ${already
+        ? '<span class="volet-check">✓</span>'
+        : locked ? '' : `<button class="volet-add-btn" title="Ajouter à la frise">＋</button>`}`;
+
+    if (locked) {
+      div.addEventListener('click', () => openSubscribePopup());
+    } else if (!already) {
+      const btn = div.querySelector('.volet-add-btn');
+      if (btn) btn.addEventListener('click', e => {
+        e.stopPropagation();
+        addFromCatalogue(sub.id, rubrique.id);
+        div.className = 'volet-item already';
+        div.querySelector('.volet-add-btn')?.remove();
+        const check = document.createElement('span');
+        check.className = 'volet-check'; check.textContent = '✓';
+        div.appendChild(check);
+      });
+    }
+    list.appendChild(div);
+  });
+
+  document.getElementById('volet-2').classList.add('open');
+}
+
+// ── Compatibilité buildCatalogueList ─────────────────────────
+function buildCatalogueList(filter) {
+  // Reconstruire le volet 0 si ouvert
+  if (document.getElementById('volet-0').classList.contains('open')) {
+    buildVolet0();
   }
 }
 
@@ -5317,17 +5433,20 @@ function addFromCatalogue(id, ensureParentId) {
   autoSaveState();
 }
 
-// Initialisation du catalogue hover
+// Initialisation du catalogue — système de volets
 document.getElementById('catalogue-trigger').addEventListener('mouseenter', openCatalogue);
-document.getElementById('catalogue-panel').addEventListener('mouseleave', e => {
-  // Ne fermer que si on quitte vraiment le panneau (pas vers le trigger)
-  if (!document.getElementById('catalogue-panel').contains(e.relatedTarget)) {
-    closeCatalogue();
+
+// Fermer si la souris quitte toute la zone des volets
+document.getElementById('volets-container').addEventListener('mouseleave', e => {
+  const trigger = document.getElementById('catalogue-trigger');
+  if (!trigger.contains(e.relatedTarget)) {
+    // Petit délai pour éviter fermeture intempestive entre volets
+    // On ne ferme PAS au mouseleave — fermeture uniquement via clic canvas ou Escape
   }
 });
 document.getElementById('catalogue-trigger').addEventListener('mouseleave', e => {
-  if (!document.getElementById('catalogue-panel').contains(e.relatedTarget)) {
-    closeCatalogue();
+  if (!document.getElementById('volets-container').contains(e.relatedTarget)) {
+    // Pas de fermeture au survol — seulement clic canvas ou Escape
   }
 });
 document.getElementById('cat-search').addEventListener('input', e => {
@@ -6128,6 +6247,7 @@ async function dbPullCatalogue() {
       defaultType: r.type_defaut || 'point',
       acces:       r.acces || 'public',
       ref:         r.ref  || null,
+      niveau:      r.niveau ?? 1,
       _events:     []
     }));
 
@@ -8271,7 +8391,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.2 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.3 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
