@@ -2035,7 +2035,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.5 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.6 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5453,17 +5453,16 @@ function addFromCatalogue(id, ensureParentId) {
 // Initialisation du catalogue — système de volets
 document.getElementById('catalogue-trigger').addEventListener('mouseenter', openCatalogue);
 
-// Fermer si la souris quitte toute la zone des volets
+// Fermer les volets quand la souris quitte la zone des volets vers le canvas
 document.getElementById('volets-container').addEventListener('mouseleave', e => {
   const trigger = document.getElementById('catalogue-trigger');
   if (!trigger.contains(e.relatedTarget)) {
-    // Petit délai pour éviter fermeture intempestive entre volets
-    // On ne ferme PAS au mouseleave — fermeture uniquement via clic canvas ou Escape
+    closeAllVolets();
   }
 });
 document.getElementById('catalogue-trigger').addEventListener('mouseleave', e => {
   if (!document.getElementById('volets-container').contains(e.relatedTarget)) {
-    // Pas de fermeture au survol — seulement clic canvas ou Escape
+    closeAllVolets();
   }
 });
 document.getElementById('cat-search').addEventListener('input', e => {
@@ -8408,7 +8407,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.5 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.6 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
