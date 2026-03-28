@@ -1346,6 +1346,13 @@
     to   { transform: translateX(0);     opacity: 1; }
   }
   .volet.open { display: flex; }
+  .volet.closing {
+    animation: voletOut .35s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  @keyframes voletOut {
+    from { transform: translateX(0);   opacity: 1; }
+    to   { transform: translateX(-20px); opacity: 0; }
+  }
 
   /* Décalage en cascade : chaque volet suivant */
   .volet:nth-child(2) { background: #1e2c48; }
@@ -2035,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.6 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.7 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5131,7 +5138,15 @@ let catalogueData = []; // [{ id, title, color, parentId?, defaultType? }, …]
 //  SYSTÈME DE VOLETS CATALOGUE
 // ═══════════════════════════════════════════════════════════════
 
+let _voletCloseTimer = null;
+
 function openCatalogue() {
+  // Annuler toute fermeture en cours
+  if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
+  // Retirer les classes closing si on rouvre
+  ['volet-0','volet-1','volet-2'].forEach(id => {
+    document.getElementById(id).classList.remove('closing');
+  });
   document.getElementById('volets-container').classList.add('open');
   document.getElementById('catalogue-trigger').classList.add('open');
   document.getElementById('volet-0').classList.add('open');
@@ -5143,29 +5158,33 @@ function closeCatalogue() {
 }
 
 function closeAllVolets() {
-  document.getElementById('volets-container').classList.remove('open');
+  if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
+  const volets = ['volet-0','volet-1','volet-2'].map(id => document.getElementById(id));
+  // Animer chaque volet ouvert
+  volets.filter(v => v.classList.contains('open')).forEach(v => v.classList.add('closing'));
   document.getElementById('catalogue-trigger').classList.remove('open');
-  ['volet-0','volet-1','volet-2'].forEach(id => {
-    document.getElementById(id).classList.remove('open', 'active');
-  });
-  _voletActiveItem = null;
+  _voletCloseTimer = setTimeout(() => {
+    volets.forEach(v => { v.classList.remove('open', 'active', 'closing'); });
+    document.getElementById('volets-container').classList.remove('open');
+    _voletCloseTimer = null;
+    _voletActiveItem = null;
+  }, 350);
 }
 
 function closeVoletsFrom(level) {
   for (let i = level; i <= 2; i++) {
-    document.getElementById(`volet-${i}`).classList.remove('open', 'active');
-  }
-  if (level === 0) closeAllVolets();
-  // Désactiver l'item actif du niveau précédent
-  if (level === 2) {
-    document.querySelectorAll('#volet-1-list .volet-item.active')
-      .forEach(el => el.classList.remove('active'));
+    const v = document.getElementById(`volet-${i}`);
+    v.classList.remove('open', 'active', 'closing');
   }
   if (level === 1) {
     document.querySelectorAll('#volet-0-list .volet-item.active')
       .forEach(el => el.classList.remove('active'));
-    closeVoletsFrom(2);
   }
+  if (level === 2) {
+    document.querySelectorAll('#volet-1-list .volet-item.active')
+      .forEach(el => el.classList.remove('active'));
+  }
+  if (level === 0) closeAllVolets();
 }
 
 let _voletActiveItem = null;
@@ -5451,19 +5470,28 @@ function addFromCatalogue(id, ensureParentId) {
 }
 
 // Initialisation du catalogue — système de volets
-document.getElementById('catalogue-trigger').addEventListener('mouseenter', openCatalogue);
+document.getElementById('catalogue-trigger').addEventListener('mouseenter', () => {
+  if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
+  openCatalogue();
+});
 
-// Fermer les volets quand la souris quitte la zone des volets vers le canvas
+// Fermer avec délai quand la souris quitte la zone des volets
 document.getElementById('volets-container').addEventListener('mouseleave', e => {
   const trigger = document.getElementById('catalogue-trigger');
   if (!trigger.contains(e.relatedTarget)) {
-    closeAllVolets();
+    if (_voletCloseTimer) clearTimeout(_voletCloseTimer);
+    _voletCloseTimer = setTimeout(() => closeAllVolets(), 1500);
   }
 });
 document.getElementById('catalogue-trigger').addEventListener('mouseleave', e => {
   if (!document.getElementById('volets-container').contains(e.relatedTarget)) {
-    closeAllVolets();
+    if (_voletCloseTimer) clearTimeout(_voletCloseTimer);
+    _voletCloseTimer = setTimeout(() => closeAllVolets(), 1500);
   }
+});
+// Annuler la fermeture si la souris revient dans les volets
+document.getElementById('volets-container').addEventListener('mouseenter', () => {
+  if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
 });
 document.getElementById('cat-search').addEventListener('input', e => {
   buildCatalogueList(e.target.value);
@@ -8407,7 +8435,7 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.6 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.7 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
