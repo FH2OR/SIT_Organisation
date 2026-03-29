@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.13 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.14 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5223,6 +5223,9 @@ function openVolet1(famille) {
 
   const enfants = catalogueData.filter(c => c.parentId === famille.id)
     .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+
+  console.log('[volet1] famille:', famille.id, famille.title);
+  console.log('[volet1] enfants trouvés:', enfants.map(c => `${c.id}(parent:${c.parentId})`));
 
   if (enfants.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
