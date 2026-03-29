@@ -593,6 +593,7 @@
     position: relative;
     transition: background .15s;
     display: flex; align-items: center; justify-content: center;
+    user-select: none;
   }
   #fa-resizer:hover, #fa-resizer.dragging { background: var(--accent); }
   #fa-resizer::after {
@@ -2066,7 +2067,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.27 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.28 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -7810,27 +7811,39 @@ function addSingleEvent(evt, rubrique) {
   let dragging  = false, startX = 0, startW = 0;
 
   resizer.addEventListener('mousedown', e => {
+    // Ne pas activer si un drag HTML5 est en cours
+    if (e.button !== 0) return;
     dragging = true;
     startX   = e.clientX;
     startW   = fa.offsetWidth;
     resizer.classList.add('dragging');
-    document.body.style.cursor    = 'col-resize';
-    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    // Ne pas mettre userSelect sur body — ça casse le drag HTML5 des items FA
+    // On bloque uniquement la sélection sur le resizer lui-même via CSS
     e.preventDefault();
+    e.stopPropagation();
   });
 
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
     const newW = Math.max(160, startW + (e.clientX - startX));
     fa.style.width = newW + 'px';
+    e.preventDefault();
   });
 
-  document.addEventListener('mouseup', () => {
+  document.addEventListener('mouseup', e => {
     if (!dragging) return;
     dragging = false;
     resizer.classList.remove('dragging');
-    document.body.style.cursor     = '';
-    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  });
+
+  // Sécurité : réinitialiser si la souris sort de la fenêtre
+  document.addEventListener('mouseleave', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
   });
 })();
 
