@@ -2067,7 +2067,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.29 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.30 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -4926,7 +4926,6 @@ function buildFA() {
 
     // ── Drag & drop handlers ─────────────────────────────────
     el.addEventListener('dragstart', e => {
-      console.log('[drag] dragstart sur:', tl.id);
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', tl.id);
       // Petite image fantôme transparente
@@ -7809,42 +7808,31 @@ function addSingleEvent(evt, rubrique) {
 (function() {
   const resizer = document.getElementById('fa-resizer');
   const fa      = document.getElementById('fa');
-  let dragging  = false, startX = 0, startW = 0;
+  let startX = 0, startW = 0;
 
-  resizer.addEventListener('mousedown', e => {
-    // Ne pas activer si un drag HTML5 est en cours
+  resizer.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
-    dragging = true;
-    startX   = e.clientX;
-    startW   = fa.offsetWidth;
+    startX = e.clientX;
+    startW = fa.offsetWidth;
+    resizer.setPointerCapture(e.pointerId);
     resizer.classList.add('dragging');
-    document.body.style.cursor = 'col-resize';
-    // Ne pas mettre userSelect sur body — ça casse le drag HTML5 des items FA
-    // On bloque uniquement la sélection sur le resizer lui-même via CSS
     e.preventDefault();
-    e.stopPropagation();
   });
 
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
+  resizer.addEventListener('pointermove', e => {
+    if (!resizer.hasPointerCapture(e.pointerId)) return;
     const newW = Math.max(160, startW + (e.clientX - startX));
     fa.style.width = newW + 'px';
-    e.preventDefault();
   });
 
-  document.addEventListener('mouseup', e => {
-    if (!dragging) return;
-    dragging = false;
+  resizer.addEventListener('pointerup', e => {
+    if (!resizer.hasPointerCapture(e.pointerId)) return;
+    resizer.releasePointerCapture(e.pointerId);
     resizer.classList.remove('dragging');
-    document.body.style.cursor = '';
   });
 
-  // Sécurité : réinitialiser si la souris sort de la fenêtre
-  document.addEventListener('mouseleave', () => {
-    if (!dragging) return;
-    dragging = false;
+  resizer.addEventListener('pointercancel', e => {
     resizer.classList.remove('dragging');
-    document.body.style.cursor = '';
   });
 })();
 
