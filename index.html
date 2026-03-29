@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.36 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.37 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5137,7 +5137,9 @@ function openCatalogue() {
   ['volet-0','volet-1','volet-2','volet-3'].forEach(id => {
     document.getElementById(id).classList.remove('closing');
   });
-  document.getElementById('volets-container').classList.add('open');
+  const vc = document.getElementById('volets-container');
+  vc.style.pointerEvents = ''; // remettre le CSS en charge
+  vc.classList.add('open');
   document.getElementById('catalogue-trigger').classList.add('open');
   document.getElementById('volet-0').classList.add('open');
   buildVolet0();
