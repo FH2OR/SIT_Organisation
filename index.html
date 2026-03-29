@@ -578,10 +578,29 @@
     width: var(--fa-w);
     min-width: 160px;
     background: var(--bg2);
-    border-right: 1px solid var(--border);
+    border-right: none;
     display: flex; flex-direction: column;
     flex-shrink: 0;
-    resize: horizontal; overflow: hidden;
+    overflow: hidden;
+  }
+
+  /* ── Diviseur redimensionnable FA/FB ─────────────────────── */
+  #fa-resizer {
+    width: 5px;
+    flex-shrink: 0;
+    background: var(--border);
+    cursor: col-resize;
+    position: relative;
+    transition: background .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #fa-resizer:hover, #fa-resizer.dragging { background: var(--accent); }
+  #fa-resizer::after {
+    content: '';
+    display: block;
+    width: 1px; height: 40px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 2px;
   }
   .panel-header {
     padding: 10px 14px;
@@ -2047,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.18 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.19 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2377,6 +2396,9 @@
     </div>
     <div id="fa-list"></div>
   </div>
+
+  <!-- Diviseur redimensionnable -->
+  <div id="fa-resizer"></div>
 
   <!-- FB -->
   <div id="fb">
@@ -7627,7 +7649,36 @@ function closeSearchGlobal() {
   document.getElementById('srch-global').value = '';
 }
 
-// ── Helpers messages ──────────────────────────────────────────
+// ── Diviseur redimensionnable FA ─────────────────────────────
+(function() {
+  const resizer = document.getElementById('fa-resizer');
+  const fa      = document.getElementById('fa');
+  let dragging  = false, startX = 0, startW = 0;
+
+  resizer.addEventListener('mousedown', e => {
+    dragging = true;
+    startX   = e.clientX;
+    startW   = fa.offsetWidth;
+    resizer.classList.add('dragging');
+    document.body.style.cursor    = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const newW = Math.max(160, startW + (e.clientX - startX));
+    fa.style.width = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+  });
+})();
 
 // ═══════════════════════════════════════════════════════════════
 //  RECHERCHE
