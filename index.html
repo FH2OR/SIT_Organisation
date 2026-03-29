@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.12 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.13 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5367,8 +5367,14 @@ function addFromCatalogue(id, ensureParentId) {
     if (ancestor.niveau === 0) return; // famille de niveau 0 → pas dans la frise
     const existing = state.timelines.find(t => t.id === ancestor.id);
     if (existing) {
-      if (!existing.enabled) { existing.enabled = true; if (ancestor.parentId) syncParentRange(ancestor.parentId); }
+      if (!existing.enabled) { existing.enabled = true; if (existing.parentId) syncParentRange(existing.parentId); }
     } else {
+      // Si le parent est une grande famille (niveau 0), on ne met pas parentId
+      let aParentId = ancestor.parentId || null;
+      if (aParentId) {
+        const aParent = catalogueData.find(c => c.id === aParentId);
+        if (aParent && aParent.niveau === 0) aParentId = null;
+      }
       const entry = {
         id:      ancestor.id,
         title:   ancestor.title,
@@ -5377,12 +5383,12 @@ function addFromCatalogue(id, ensureParentId) {
         enabled: true,
         events:  ancestor._events ? [...ancestor._events] : []
       };
-      if (ancestor.parentId) {
-        entry.parentId    = ancestor.parentId;
+      if (aParentId) {
+        entry.parentId    = aParentId;
         entry.defaultType = ancestor.defaultType || 'point';
       }
       state.timelines.push(entry);
-      if (ancestor.parentId) syncParentRange(ancestor.parentId);
+      if (aParentId) syncParentRange(aParentId);
     }
   });
 
@@ -5403,7 +5409,13 @@ function addFromCatalogue(id, ensureParentId) {
       if (existingTl.parentId) syncParentRange(existingTl.parentId);
     }
   } else {
-    const parentId = cat.parentId || ensureParentId || null;
+    let parentId = cat.parentId || ensureParentId || null;
+    // Si le parent direct est une grande famille (niveau 0), ne pas le mettre comme parentId
+    // sinon la rubrique n'apparaît pas comme racine dans la frise
+    if (parentId) {
+      const parentCat = catalogueData.find(c => c.id === parentId);
+      if (parentCat && parentCat.niveau === 0) parentId = null;
+    }
     const entry = {
       id:      cat.id,
       title:   cat.title,
