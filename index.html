@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.32 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.33 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5464,13 +5464,15 @@ function addFromCatalogue(id, ensureParentId) {
   }
 
   // ── Remonter toute la chaîne d'ancêtres jusqu'à la racine ──
-  // Construit la liste [racine, ..., parent direct] dans l'ordre descendant
   const ancestors = [];
   let currentId = cat.parentId || ensureParentId || null;
+  const visited = new Set([id]); // protection contre les cycles
   while (currentId) {
+    if (visited.has(currentId)) break; // cycle détecté → on arrête
+    visited.add(currentId);
     const ancestor = catalogueData.find(c => c.id === currentId);
     if (!ancestor) break;
-    ancestors.unshift(ancestor); // insérer en tête → ordre racine-first
+    ancestors.unshift(ancestor);
     currentId = ancestor.parentId || null;
   }
 
