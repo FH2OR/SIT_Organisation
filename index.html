@@ -2067,7 +2067,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.30 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.31 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -7808,30 +7808,35 @@ function addSingleEvent(evt, rubrique) {
 (function() {
   const resizer = document.getElementById('fa-resizer');
   const fa      = document.getElementById('fa');
+
+  // Overlay transparent qui capture le drag sans interférer avec le reste
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:col-resize;display:none';
+  document.body.appendChild(overlay);
+
   let startX = 0, startW = 0;
 
-  resizer.addEventListener('pointerdown', e => {
+  resizer.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     startX = e.clientX;
     startW = fa.offsetWidth;
-    resizer.setPointerCapture(e.pointerId);
+    overlay.style.display = 'block';
     resizer.classList.add('dragging');
     e.preventDefault();
   });
 
-  resizer.addEventListener('pointermove', e => {
-    if (!resizer.hasPointerCapture(e.pointerId)) return;
+  overlay.addEventListener('mousemove', e => {
     const newW = Math.max(160, startW + (e.clientX - startX));
     fa.style.width = newW + 'px';
   });
 
-  resizer.addEventListener('pointerup', e => {
-    if (!resizer.hasPointerCapture(e.pointerId)) return;
-    resizer.releasePointerCapture(e.pointerId);
+  overlay.addEventListener('mouseup', () => {
+    overlay.style.display = 'none';
     resizer.classList.remove('dragging');
   });
 
-  resizer.addEventListener('pointercancel', e => {
+  overlay.addEventListener('mouseleave', () => {
+    overlay.style.display = 'none';
     resizer.classList.remove('dragging');
   });
 })();
