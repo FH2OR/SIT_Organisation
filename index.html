@@ -2067,7 +2067,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.28 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.29 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -4926,6 +4926,7 @@ function buildFA() {
 
     // ── Drag & drop handlers ─────────────────────────────────
     el.addEventListener('dragstart', e => {
+      console.log('[drag] dragstart sur:', tl.id);
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', tl.id);
       // Petite image fantôme transparente
