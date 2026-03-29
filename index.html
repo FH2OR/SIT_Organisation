@@ -2066,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.26 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.27 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5392,16 +5392,22 @@ function openVolet3(rubrique) {
     state.timelines.flatMap(t => t.events.map(e => e.id))
   );
 
+  // Construire l'ensemble des ref existants dans la rubrique
+  const allRefs = new Set((rubrique._events || []).map(e => e.ref).filter(Boolean));
+
+  // Les ranges principaux sont les ranges dont dep n'est PAS le ref d'un autre événement
+  // (dep peut être une catégorie comme PERSON_POLITI — ce n'est pas une dépendance)
   const principaux = (rubrique._events || [])
-    .filter(e => !e._auto && e.type === 'range' && !e.dep)
+    .filter(e => !e._auto && e.type === 'range' && !allRefs.has(e.dep))
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
 
-  console.log('[volet3] principaux (ranges sans dep):', principaux.length);
+  console.log('[volet3] principaux corrigés:', principaux.length);
+
   if (principaux.length === 0) {
+    // Dernier fallback : tous les ranges
     const tous = (rubrique._events || [])
-      .filter(e => !e._auto && !e.dep)
+      .filter(e => !e._auto && e.type === 'range')
       .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
-    console.log('[volet3] fallback tous sans dep:', tous.length);
     principaux.push(...tous);
   }
 
@@ -7779,9 +7785,9 @@ function addSingleEvent(evt, rubrique) {
     tl.events.push({ ...evt });
   }
 
-  // Ajouter tous les événements dépendants (dep === evt.ref)
+  // Ajouter tous les événements dont dep === ref de cette personnalité
   if (evt.ref) {
-    const dependants = (rubrique._events || []).filter(e => e.dep === evt.ref);
+    const dependants = (rubrique._events || []).filter(e => e.dep === evt.ref && e.id !== evt.id);
     dependants.forEach(dep => {
       if (!tl.events.find(e => e.id === dep.id)) {
         tl.events.push({ ...dep });
