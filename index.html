@@ -2066,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.25 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.26 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5377,33 +5377,31 @@ function openVolet3(rubrique) {
   closeVoletsFrom(3);
   document.getElementById('volet-3-title').textContent = rubrique.title;
 
-  // Vider le champ de recherche à chaque ouverture
+  console.log('[volet3] rubrique:', rubrique.id, '| _events:', rubrique._events?.length);
+
   const searchInput = document.getElementById('volet-3-search');
   if (searchInput) {
     searchInput.value = '';
-    // Réattacher le listener (évite les doublons)
     searchInput.oninput = () => filterVolet3(searchInput.value);
   }
 
   const list = document.getElementById('volet-3-list');
   list.innerHTML = '';
 
-  // Événements déjà chargés dans state.timelines (via leur id)
   const loadedEvtIds = new Set(
     state.timelines.flatMap(t => t.events.map(e => e.id))
   );
 
-  // N'afficher que les ranges principaux (pas les points dépendants)
-  // Un range principal est un range sans champ dep (ou dep vide)
   const principaux = (rubrique._events || [])
     .filter(e => !e._auto && e.type === 'range' && !e.dep)
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
 
+  console.log('[volet3] principaux (ranges sans dep):', principaux.length);
   if (principaux.length === 0) {
-    // Fallback : si pas de ranges, afficher tous les événements non-dépendants
     const tous = (rubrique._events || [])
       .filter(e => !e._auto && !e.dep)
       .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+    console.log('[volet3] fallback tous sans dep:', tous.length);
     principaux.push(...tous);
   }
 
