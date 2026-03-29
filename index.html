@@ -2066,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.20 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.22 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2378,6 +2378,13 @@
       <span class="volet-icon" id="volet-3-icon"></span>
       <span class="volet-title" id="volet-3-title">—</span>
       <button class="volet-close" onclick="closeVoletsFrom(3)" title="Fermer">✕</button>
+    </div>
+    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <input type="text" id="volet-3-search" placeholder="🔍 Rechercher…"
+        oninput="filterVolet3(this.value)"
+        style="width:100%;padding:5px 8px;background:var(--bg);border:1px solid var(--border);
+               border-radius:4px;color:var(--text);font-size:12px;
+               font-family:'Source Sans 3',sans-serif;outline:none;box-sizing:border-box">
     </div>
     <div class="volet-list" id="volet-3-list"></div>
   </div>
@@ -5371,35 +5378,47 @@ function openVolet3(rubrique) {
   closeVoletsFrom(3);
   document.getElementById('volet-3-title').textContent = rubrique.title;
 
+  // Vider le champ de recherche à chaque ouverture
+  const searchInput = document.getElementById('volet-3-search');
+  if (searchInput) { searchInput.value = ''; setTimeout(() => searchInput.focus(), 80); }
+
   const list = document.getElementById('volet-3-list');
   list.innerHTML = '';
 
-  // Événements déjà chargés individuellement dans state.timelines
-  // On les identifie par leur evt.id préfixé 'sb_'
+  // Événements déjà chargés dans state.timelines (via leur id)
   const loadedEvtIds = new Set(
     state.timelines.flatMap(t => t.events.map(e => e.id))
   );
 
-  const evts = (rubrique._events || [])
-    .filter(e => !e._auto)
+  // N'afficher que les ranges principaux (pas les points dépendants)
+  // Un range principal est un range sans champ dep (ou dep vide)
+  const principaux = (rubrique._events || [])
+    .filter(e => !e._auto && e.type === 'range' && !e.dep)
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
 
-  if (evts.length === 0) {
+  if (principaux.length === 0) {
+    // Fallback : si pas de ranges, afficher tous les événements non-dépendants
+    const tous = (rubrique._events || [])
+      .filter(e => !e._auto && !e.dep)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+    principaux.push(...tous);
+  }
+
+  if (principaux.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
       Aucun élément dans cette rubrique.</div>`;
     document.getElementById('volet-3').classList.add('open');
     return;
   }
 
-  evts.forEach(evt => {
+  principaux.forEach(evt => {
     const already = loadedEvtIds.has(evt.id);
     const div = document.createElement('div');
     div.className = 'volet-item' + (already ? ' already' : '');
 
-    const typeIcon = evt.type === 'range' ? '▬' : '◉';
     div.innerHTML = `
       <div class="volet-dot" style="background:${evt.color || rubrique.color}"></div>
-      <span class="volet-label">${typeIcon} ${escHtml(evt.title || '—')}</span>
+      <span class="volet-label">${escHtml(evt.title || '—')}</span>
       ${already
         ? '<span class="volet-check">✓</span>'
         : `<button class="volet-add-btn" title="Ajouter à la frise">＋</button>`}`;
@@ -5420,6 +5439,16 @@ function openVolet3(rubrique) {
   });
 
   document.getElementById('volet-3').classList.add('open');
+}
+
+// ── Filtrer les items du volet 3 par titre ────────────────────
+function filterVolet3(q) {
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const qn = norm(q);
+  document.querySelectorAll('#volet-3-list .volet-item').forEach(div => {
+    const label = div.querySelector('.volet-label')?.textContent || '';
+    div.style.display = (!qn || norm(label).includes(qn)) ? '' : 'none';
+  });
 }
 
 // ── Compatibilité buildCatalogueList ─────────────────────────
@@ -7727,8 +7756,8 @@ function closeSearchGlobal() {
 }
 
 // ── Ajouter un seul événement individuel à la frise ──────────
+// Charge le range principal + tous les événements dont dep === evt.ref
 function addSingleEvent(evt, rubrique) {
-  // Chercher ou créer une timeline virtuelle dédiée pour cette rubrique en mode détail
   const tlId = rubrique.id + '__detail';
   let tl = state.timelines.find(t => t.id === tlId);
   if (!tl) {
@@ -7742,9 +7771,22 @@ function addSingleEvent(evt, rubrique) {
     };
     state.timelines.push(tl);
   }
+
+  // Ajouter le range principal s'il n'est pas déjà présent
   if (!tl.events.find(e => e.id === evt.id)) {
     tl.events.push({ ...evt });
   }
+
+  // Ajouter tous les événements dépendants (dep === evt.ref)
+  if (evt.ref) {
+    const dependants = (rubrique._events || []).filter(e => e.dep === evt.ref);
+    dependants.forEach(dep => {
+      if (!tl.events.find(e => e.id === dep.id)) {
+        tl.events.push({ ...dep });
+      }
+    });
+  }
+
   buildFA();
   buildCatalogueList('');
   Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
