@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.38 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.39 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5281,8 +5281,8 @@ function openVolet1(famille) {
     if (locked) {
       div.addEventListener('click', () => openSubscribePopup());
     } else if (rub.detail === 'oui') {
-      // Mode détail : ouvre le volet 3 avec les événements individuels
       div.addEventListener('click', () => {
+        console.log('[volet1 click] detail=oui → openVolet3', rub.id);
         document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
         div.classList.add('active');
         openVolet3(rub);
