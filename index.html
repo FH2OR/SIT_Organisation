@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.15 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.16 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5174,22 +5174,16 @@ function buildVolet0() {
   const list = document.getElementById('volet-0-list');
   list.innerHTML = '';
 
-  console.log('[volets] catalogueData:', catalogueData.length, 'items');
-  console.log('[volets] niveaux:', catalogueData.map(c => `${c.title}=niv${c.niveau}`).join(', '));
-
   if (catalogueData.length === 0) {
     list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:12px">
       Importez un fichier Excel<br>pour alimenter le catalogue.</div>`;
     return;
   }
 
-  // Familles niveau 0, sinon toutes les racines sans parent
   const familles = catalogueData.filter(c => c.niveau === 0);
   const items = familles.length > 0
     ? familles
     : catalogueData.filter(c => !c.parentId);
-
-  console.log('[volets] familles/items à afficher:', items.map(c => c.title));
 
   items.forEach(fam => {
     const enfants = catalogueData.filter(c => c.parentId === fam.id);
@@ -5223,9 +5217,6 @@ function openVolet1(famille) {
 
   const enfants = catalogueData.filter(c => c.parentId === famille.id)
     .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
-
-  console.log('[volet1] famille:', famille.id, famille.title);
-  console.log('[volet1] enfants trouvés:', enfants.map(c => `${c.id}(parent:${c.parentId})`));
 
   if (enfants.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
@@ -5340,7 +5331,6 @@ function buildCatalogueList(filter) {
 function addFromCatalogue(id, ensureParentId) {
   const cat = catalogueData.find(c => c.id === id);
   if (!cat) return;
-  console.log('[addFromCat] id:', id, 'niveau:', cat.niveau, 'parentId:', cat.parentId, 'events:', cat._events?.length);
 
   // ── Vérifier les droits d'accès ─────────────────────────────
   // Trouver la rubrique racine (ancêtre ou elle-même)
@@ -6409,14 +6399,21 @@ async function dbLoad(id, nom) {
       state.timelines = [];
       payload.activeTimelines.forEach(id => {
         const cat = catalogueData.find(c => c.id === id);
-        if (cat) {
-          const entry = {
-            id: cat.id, title: cat.title, color: cat.color,
-            enabled: true, events: cat._events ? [...cat._events] : []
-          };
-          if (cat.parentId) { entry.parentId = cat.parentId; entry.defaultType = cat.defaultType; }
-          state.timelines.push(entry);
+        if (!cat) return;
+        if (cat.niveau === 0) return; // ne jamais insérer les grandes familles
+        const entry = {
+          id: cat.id, title: cat.title, color: cat.color,
+          enabled: true, events: cat._events ? [...cat._events] : []
+        };
+        if (cat.parentId) {
+          // Ne pas hériter du parentId si c'est une grande famille (niveau 0)
+          const parentCat = catalogueData.find(c => c.id === cat.parentId);
+          if (!parentCat || parentCat.niveau !== 0) {
+            entry.parentId    = cat.parentId;
+            entry.defaultType = cat.defaultType;
+          }
         }
+        state.timelines.push(entry);
       });
     }
 
