@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.34 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.35 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -4875,10 +4875,7 @@ function buildFA() {
     const el = document.createElement('div');
     el.className = 'tl-item' + (tl.enabled ? ' active' : '');
     el.dataset.id = tl.id;
-    el.draggable = false; // désactivé par défaut — activé seulement depuis la poignée
-    const handle = el.querySelector('.tl-drag-handle');
-    handle.addEventListener('mousedown', () => { el.draggable = true; });
-    handle.addEventListener('mouseup',   () => { el.draggable = false; });
+    el.draggable = true;
     const totalEvts = tl.events.filter(e => !e._auto).length
       + state.timelines.filter(s => s.parentId === tl.id).reduce((a, s) => a + s.events.length, 0);
     el.innerHTML = `
@@ -4924,7 +4921,6 @@ function buildFA() {
       el.classList.add('dragging');
     });
     el.addEventListener('dragend', () => {
-      el.draggable = false;
       el.classList.remove('dragging');
       document.querySelectorAll('.tl-item').forEach(i => {
         i.classList.remove('drag-over-above', 'drag-over-below');
@@ -5454,6 +5450,7 @@ function buildCatalogueList(filter) {
 function addFromCatalogue(id, ensureParentId) {
   const cat = catalogueData.find(c => c.id === id);
   if (!cat) return;
+  console.log('[add] id:', id, 'niveau:', cat.niveau, 'parentId:', cat.parentId, 'ensureParentId:', ensureParentId, 'events:', cat._events?.length);
 
   // ── Vérifier les droits d'accès ─────────────────────────────
   // Trouver la rubrique racine (ancêtre ou elle-même)
