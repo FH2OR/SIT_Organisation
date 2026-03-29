@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.42 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.43 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5756,7 +5756,6 @@ function showFCDetail(evt, tl) {
   document.getElementById('fc-title').textContent = evt.title;
   document.getElementById('fc-title').style.color = evt.color;
   document.getElementById('fc-date').textContent  = fmtEvent(evt);
-  console.log('[showFC] evt.type:', evt.type, '| start:', JSON.stringify(evt.type==='point'?evt.date:evt.start), '| formatted:', fmtEvent(evt));
 
   // ── Durée (range uniquement) ──────────────────────────────
   const durEl = document.getElementById('fc-duration');
