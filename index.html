@@ -2066,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.19 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.20 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2370,6 +2370,16 @@
       <button class="volet-close" onclick="closeVoletsFrom(2)" title="Fermer">✕</button>
     </div>
     <div class="volet-list" id="volet-2-list"></div>
+  </div>
+
+  <!-- Volet 3 : éléments individuels (mode détail) -->
+  <div class="volet" id="volet-3">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-3-icon"></span>
+      <span class="volet-title" id="volet-3-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(3)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-3-list"></div>
   </div>
 
 </div>
@@ -5139,7 +5149,7 @@ function openCatalogue() {
   // Annuler toute fermeture en cours
   if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
   // Retirer les classes closing si on rouvre
-  ['volet-0','volet-1','volet-2'].forEach(id => {
+  ['volet-0','volet-1','volet-2','volet-3'].forEach(id => {
     document.getElementById(id).classList.remove('closing');
   });
   document.getElementById('volets-container').classList.add('open');
@@ -5157,29 +5167,28 @@ function closeAllVolets() {
   document.getElementById('catalogue-trigger').classList.remove('open');
 
   // Fermeture en cascade droite → gauche
-  const ordre = ['volet-2', 'volet-1', 'volet-0'];
+  const ordre = ['volet-3', 'volet-2', 'volet-1', 'volet-0'];
   let delai = 0;
   ordre.forEach(id => {
     const v = document.getElementById(id);
     if (v.classList.contains('open')) {
       setTimeout(() => v.classList.add('closing'), delai);
-      delai += 200; // 200ms entre chaque volet
+      delai += 200;
     }
   });
 
-  // Nettoyage après la dernière animation
   _voletCloseTimer = setTimeout(() => {
-    ['volet-0','volet-1','volet-2'].forEach(id => {
+    ['volet-0','volet-1','volet-2','volet-3'].forEach(id => {
       document.getElementById(id).classList.remove('open', 'active', 'closing');
     });
     document.getElementById('volets-container').classList.remove('open');
     _voletCloseTimer = null;
     _voletActiveItem = null;
-  }, delai + 350);
+  }, delai + 550);
 }
 
 function closeVoletsFrom(level) {
-  for (let i = level; i <= 2; i++) {
+  for (let i = level; i <= 3; i++) {
     const v = document.getElementById(`volet-${i}`);
     v.classList.remove('open', 'active', 'closing');
   }
@@ -5189,6 +5198,10 @@ function closeVoletsFrom(level) {
   }
   if (level === 2) {
     document.querySelectorAll('#volet-1-list .volet-item.active')
+      .forEach(el => el.classList.remove('active'));
+  }
+  if (level === 3) {
+    document.querySelectorAll('#volet-2-list .volet-item.active')
       .forEach(el => el.classList.remove('active'));
   }
   if (level === 0) closeAllVolets();
@@ -5266,7 +5279,7 @@ function openVolet1(famille) {
       <div class="volet-dot" style="background:${rub.color}"></div>
       <span class="volet-label">${escHtml(rub.title)}</span>
       ${locked ? '<span class="volet-acces-badge">⭐</span>' : ''}
-      ${hasChildren
+      ${(hasChildren || rub.detail === 'oui')
         ? '<span class="volet-arrow">›</span>'
         : already
           ? '<span class="volet-check">✓</span>'
@@ -5274,6 +5287,13 @@ function openVolet1(famille) {
 
     if (locked) {
       div.addEventListener('click', () => openSubscribePopup());
+    } else if (rub.detail === 'oui') {
+      // Mode détail : ouvre le volet 3 avec les événements individuels
+      div.addEventListener('click', () => {
+        document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
+        div.classList.add('active');
+        openVolet3(rub);
+      });
     } else if (hasChildren) {
       div.addEventListener('click', () => {
         document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
@@ -5344,6 +5364,62 @@ function openVolet2(rubrique) {
   });
 
   document.getElementById('volet-2').classList.add('open');
+}
+
+// ── Volet 3 : éléments individuels (mode detail = 'oui') ──────
+function openVolet3(rubrique) {
+  closeVoletsFrom(3);
+  document.getElementById('volet-3-title').textContent = rubrique.title;
+
+  const list = document.getElementById('volet-3-list');
+  list.innerHTML = '';
+
+  // Événements déjà chargés individuellement dans state.timelines
+  // On les identifie par leur evt.id préfixé 'sb_'
+  const loadedEvtIds = new Set(
+    state.timelines.flatMap(t => t.events.map(e => e.id))
+  );
+
+  const evts = (rubrique._events || [])
+    .filter(e => !e._auto)
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+
+  if (evts.length === 0) {
+    list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
+      Aucun élément dans cette rubrique.</div>`;
+    document.getElementById('volet-3').classList.add('open');
+    return;
+  }
+
+  evts.forEach(evt => {
+    const already = loadedEvtIds.has(evt.id);
+    const div = document.createElement('div');
+    div.className = 'volet-item' + (already ? ' already' : '');
+
+    const typeIcon = evt.type === 'range' ? '▬' : '◉';
+    div.innerHTML = `
+      <div class="volet-dot" style="background:${evt.color || rubrique.color}"></div>
+      <span class="volet-label">${typeIcon} ${escHtml(evt.title || '—')}</span>
+      ${already
+        ? '<span class="volet-check">✓</span>'
+        : `<button class="volet-add-btn" title="Ajouter à la frise">＋</button>`}`;
+
+    if (!already) {
+      const btn = div.querySelector('.volet-add-btn');
+      if (btn) btn.addEventListener('click', e => {
+        e.stopPropagation();
+        addSingleEvent(evt, rubrique);
+        div.className = 'volet-item already';
+        btn.remove();
+        const check = document.createElement('span');
+        check.className = 'volet-check'; check.textContent = '✓';
+        div.appendChild(check);
+      });
+    }
+    list.appendChild(div);
+  });
+
+  document.getElementById('volet-3').classList.add('open');
 }
 
 // ── Compatibilité buildCatalogueList ─────────────────────────
@@ -6305,6 +6381,7 @@ async function dbPullCatalogue() {
       acces:       r.acces || 'public',
       ref:         r.ref  || null,
       niveau:      r.niveau ?? 1,
+      detail:      r.detail || 'non',
       _events:     []
     }));
 
@@ -7647,6 +7724,33 @@ function closeSearchGlobal() {
   document.getElementById('srch-results-inner').style.display = 'none';
   document.getElementById('sgp-list').innerHTML = '';
   document.getElementById('srch-global').value = '';
+}
+
+// ── Ajouter un seul événement individuel à la frise ──────────
+function addSingleEvent(evt, rubrique) {
+  // Chercher ou créer une timeline virtuelle dédiée pour cette rubrique en mode détail
+  const tlId = rubrique.id + '__detail';
+  let tl = state.timelines.find(t => t.id === tlId);
+  if (!tl) {
+    tl = {
+      id:      tlId,
+      title:   rubrique.title,
+      color:   rubrique.color,
+      enabled: true,
+      events:  [],
+      _detail: true
+    };
+    state.timelines.push(tl);
+  }
+  if (!tl.events.find(e => e.id === evt.id)) {
+    tl.events.push({ ...evt });
+  }
+  buildFA();
+  buildCatalogueList('');
+  Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
+  buildRefMap();
+  render();
+  autoSaveState();
 }
 
 // ── Diviseur redimensionnable FA ─────────────────────────────
