@@ -2066,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.23 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.24 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2380,8 +2380,7 @@
       <button class="volet-close" onclick="closeVoletsFrom(3)" title="Fermer">✕</button>
     </div>
     <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <input type="text" id="volet-3-search" placeholder="🔍 Rechercher…"
-        oninput="filterVolet3(this.value)"
+      <input type="text" id="volet-3-search" placeholder="🔍 Rechercher… (3 car. min)"
         style="width:100%;padding:5px 8px;background:var(--bg);border:1px solid var(--border);
                border-radius:4px;color:var(--text);font-size:12px;
                font-family:'Source Sans 3',sans-serif;outline:none;box-sizing:border-box">
@@ -5380,7 +5379,11 @@ function openVolet3(rubrique) {
 
   // Vider le champ de recherche à chaque ouverture
   const searchInput = document.getElementById('volet-3-search');
-  if (searchInput) { searchInput.value = ''; setTimeout(() => searchInput.focus(), 80); }
+  if (searchInput) {
+    searchInput.value = '';
+    // Réattacher le listener (évite les doublons)
+    searchInput.oninput = () => filterVolet3(searchInput.value);
+  }
 
   const list = document.getElementById('volet-3-list');
   list.innerHTML = '';
@@ -5439,6 +5442,7 @@ function openVolet3(rubrique) {
   });
 
   document.getElementById('volet-3').classList.add('open');
+  setTimeout(() => document.getElementById('volet-3-search')?.focus(), 80);
 }
 
 // ── Filtrer les items du volet 3 par titre ────────────────────
