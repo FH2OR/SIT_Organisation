@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.40 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.41 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -6414,6 +6414,10 @@ async function dbPullCatalogue() {
       const cat = catMap[e.rubrique_id];
       if (!cat) return;
       const startTuple = parseInputDate(e.date_debut);
+      // Log temporaire sur les dates avec /
+      if (e.date_debut && String(e.date_debut).includes('/')) {
+        console.log('[date]', e.titre, '| raw:', e.date_debut, '→ tuple:', JSON.stringify(startTuple));
+      }
       if (!startTuple) return;
 
       if (e.type === 'range') {
