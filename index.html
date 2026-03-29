@@ -1407,7 +1407,7 @@
   .volet-close:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 
   .volet-list {
-    flex: 1; overflow-y: auto; padding: 4px 0;
+    flex: 1; overflow-y: auto; padding: 4px 0; min-height: 0;
   }
   .volet-list::-webkit-scrollbar { width: 4px; }
   .volet-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -2066,7 +2066,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.24 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.25 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2379,7 +2379,7 @@
       <span class="volet-title" id="volet-3-title">—</span>
       <button class="volet-close" onclick="closeVoletsFrom(3)" title="Fermer">✕</button>
     </div>
-    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:block">
       <input type="text" id="volet-3-search" placeholder="🔍 Rechercher… (3 car. min)"
         style="width:100%;padding:5px 8px;background:var(--bg);border:1px solid var(--border);
                border-radius:4px;color:var(--text);font-size:12px;
