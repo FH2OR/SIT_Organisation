@@ -578,30 +578,11 @@
     width: var(--fa-w);
     min-width: 160px;
     background: var(--bg2);
-    border-right: none;
+    border-right: 1px solid var(--border);
     display: flex; flex-direction: column;
     flex-shrink: 0;
+    resize: horizontal;
     overflow: hidden;
-  }
-
-  /* ── Diviseur redimensionnable FA/FB ─────────────────────── */
-  #fa-resizer {
-    width: 5px;
-    flex-shrink: 0;
-    background: var(--border);
-    cursor: col-resize;
-    position: relative;
-    transition: background .15s;
-    display: flex; align-items: center; justify-content: center;
-    user-select: none;
-  }
-  #fa-resizer:hover, #fa-resizer.dragging { background: var(--accent); }
-  #fa-resizer::after {
-    content: '';
-    display: block;
-    width: 1px; height: 40px;
-    background: rgba(255,255,255,0.25);
-    border-radius: 2px;
   }
   .panel-header {
     padding: 10px 14px;
@@ -2067,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.31 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.32 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2413,9 +2394,6 @@
     </div>
     <div id="fa-list"></div>
   </div>
-
-  <!-- Diviseur redimensionnable -->
-  <div id="fa-resizer"></div>
 
   <!-- FB -->
   <div id="fb">
@@ -7803,43 +7781,6 @@ function addSingleEvent(evt, rubrique) {
   render();
   autoSaveState();
 }
-
-// ── Diviseur redimensionnable FA ─────────────────────────────
-(function() {
-  const resizer = document.getElementById('fa-resizer');
-  const fa      = document.getElementById('fa');
-
-  // Overlay transparent qui capture le drag sans interférer avec le reste
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:col-resize;display:none';
-  document.body.appendChild(overlay);
-
-  let startX = 0, startW = 0;
-
-  resizer.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
-    startX = e.clientX;
-    startW = fa.offsetWidth;
-    overlay.style.display = 'block';
-    resizer.classList.add('dragging');
-    e.preventDefault();
-  });
-
-  overlay.addEventListener('mousemove', e => {
-    const newW = Math.max(160, startW + (e.clientX - startX));
-    fa.style.width = newW + 'px';
-  });
-
-  overlay.addEventListener('mouseup', () => {
-    overlay.style.display = 'none';
-    resizer.classList.remove('dragging');
-  });
-
-  overlay.addEventListener('mouseleave', () => {
-    overlay.style.display = 'none';
-    resizer.classList.remove('dragging');
-  });
-})();
 
 // ═══════════════════════════════════════════════════════════════
 //  RECHERCHE
