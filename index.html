@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.35 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.36 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5151,6 +5151,9 @@ function closeAllVolets() {
   if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
   document.getElementById('catalogue-trigger').classList.remove('open');
 
+  // Désactiver immédiatement les pointer-events pour ne pas bloquer l'interface
+  document.getElementById('volets-container').style.pointerEvents = 'none';
+
   // Fermeture en cascade droite → gauche
   const ordre = ['volet-3', 'volet-2', 'volet-1', 'volet-0'];
   let delai = 0;
@@ -5166,7 +5169,9 @@ function closeAllVolets() {
     ['volet-0','volet-1','volet-2','volet-3'].forEach(id => {
       document.getElementById(id).classList.remove('open', 'active', 'closing');
     });
-    document.getElementById('volets-container').classList.remove('open');
+    const vc = document.getElementById('volets-container');
+    vc.classList.remove('open');
+    vc.style.pointerEvents = '';
     _voletCloseTimer = null;
     _voletActiveItem = null;
   }, delai + 550);
@@ -5356,9 +5361,6 @@ function openVolet3(rubrique) {
   closeVoletsFrom(3);
   document.getElementById('volet-3-title').textContent = rubrique.title;
 
-  console.log('[volet3] rubrique:', rubrique.id, '| _events:', rubrique._events?.length);
-
-  const searchInput = document.getElementById('volet-3-search');
   if (searchInput) {
     searchInput.value = '';
     searchInput.oninput = () => filterVolet3(searchInput.value);
@@ -5380,7 +5382,6 @@ function openVolet3(rubrique) {
     .filter(e => !e._auto && e.type === 'range' && !allRefs.has(e.dep))
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
 
-  console.log('[volet3] principaux corrigés:', principaux.length);
 
   if (principaux.length === 0) {
     // Dernier fallback : tous les ranges
@@ -5450,7 +5451,6 @@ function buildCatalogueList(filter) {
 function addFromCatalogue(id, ensureParentId) {
   const cat = catalogueData.find(c => c.id === id);
   if (!cat) return;
-  console.log('[add] id:', id, 'niveau:', cat.niveau, 'parentId:', cat.parentId, 'ensureParentId:', ensureParentId, 'events:', cat._events?.length);
 
   // ── Vérifier les droits d'accès ─────────────────────────────
   // Trouver la rubrique racine (ancêtre ou elle-même)
