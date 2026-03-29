@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.39 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.40 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5258,7 +5258,6 @@ function openVolet1(famille) {
   }
 
   enfants.forEach(rub => {
-    console.log('[volet1] rub:', rub.id, 'detail:', rub.detail, 'hasChildren:', catalogueData.filter(c => c.parentId === rub.id).length > 0);
     const sousRubs = catalogueData.filter(c => c.parentId === rub.id);
     const hasChildren = sousRubs.length > 0;
     const already = activeIds.has(rub.id);
@@ -5282,7 +5281,6 @@ function openVolet1(famille) {
       div.addEventListener('click', () => openSubscribePopup());
     } else if (rub.detail === 'oui') {
       div.addEventListener('click', () => {
-        console.log('[volet1 click] detail=oui → openVolet3', rub.id);
         document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
         div.classList.add('active');
         openVolet3(rub);
@@ -5364,6 +5362,7 @@ function openVolet3(rubrique) {
   closeVoletsFrom(3);
   document.getElementById('volet-3-title').textContent = rubrique.title;
 
+  const searchInput = document.getElementById('volet-3-search');
   if (searchInput) {
     searchInput.value = '';
     searchInput.oninput = () => filterVolet3(searchInput.value);
