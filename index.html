@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.44 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.45 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -8448,11 +8448,16 @@ function splashStartPhotos(urls) {
 async function splashLoadPhotos() {
   try {
     const evts = await sbFetch(sbUrl('evenements',
-      '?select=photo&photo=not.is.null&photo=neq.&limit=30'));
-    if (!evts?.length) { console.log('[splash] aucune photo trouvée'); return; }
+      '?select=photo&photo=not.is.null&photo=neq.&limit=200'));
+    if (!evts?.length) return;
     const urls = [...new Set(evts.map(e => e.photo).filter(u => u && u.startsWith('http')))];
-    console.log('[splash] photos:', urls.length, urls[0]);
-    if (urls.length) splashStartPhotos(urls);
+    // Mélange aléatoire (Fisher-Yates) puis on prend les 30 premières
+    for (let i = urls.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [urls[i], urls[j]] = [urls[j], urls[i]];
+    }
+    const selection = urls.slice(0, 30);
+    if (selection.length) splashStartPhotos(selection);
   } catch(e) { console.warn('[splash photos]', e.message); }
 }
 
