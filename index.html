@@ -576,7 +576,7 @@
   /* ── FA left panel ───────────────────────────────────────── */
   #fa {
     width: var(--fa-w);
-    min-width: 180px; max-width: 340px;
+    min-width: 160px;
     background: var(--bg2);
     border-right: 1px solid var(--border);
     display: flex; flex-direction: column;
@@ -623,12 +623,13 @@
   #fa-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .tl-item {
-    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 5px;
     padding: 7px 10px;
     cursor: pointer;
     border-bottom: 1px solid rgba(255,255,255,0.04);
     transition: background .15s;
     user-select: none;
+    overflow: hidden; min-width: 0;
   }
   .tl-item:hover { background: rgba(255,255,255,0.06); }
   .tl-item.active { background: rgba(255,255,255,0.08); }
@@ -638,7 +639,11 @@
     transition: all .2s;
   }
   .tl-checkbox.checked::after { content: '✓'; font-size: 10px; color: white; font-weight: bold; }
-  .tl-label { font-size: 14px; line-height: 1.3; }
+  .tl-label {
+    font-size: 14px; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0; flex: 1;
+  }
   .tl-count {
     font-size: 11px; color: var(--text-mid);
     margin-left: auto; flex-shrink: 0;
@@ -2042,7 +2047,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.16 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.18 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
