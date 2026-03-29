@@ -2048,7 +2048,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.37 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.38 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -5258,6 +5258,7 @@ function openVolet1(famille) {
   }
 
   enfants.forEach(rub => {
+    console.log('[volet1] rub:', rub.id, 'detail:', rub.detail, 'hasChildren:', catalogueData.filter(c => c.parentId === rub.id).length > 0);
     const sousRubs = catalogueData.filter(c => c.parentId === rub.id);
     const hasChildren = sousRubs.length > 0;
     const already = activeIds.has(rub.id);
