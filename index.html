@@ -2042,7 +2042,7 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.11 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.12 — Version Beta</span></span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -2646,8 +2646,8 @@ function evtEndDays(evt)   {
 // ═══════════════════════════════════════════════════════════════
 const state = {
   timelines: DATA.timelines,
-  centerDay: tupleToDays([-1,1800,1,1]),
-  scale: 0.08,          // pixels per day
+  centerDay: tupleToDays([-1, 1913, 1, 1]),  // sera recalculé au premier resize si vide
+  scale: 0.015,
   pan: { active: false, startX: 0, startCenter: 0 },
   drag: { active: false, startX: 0, startCenter: 0 },
   draw: { active: false, startX: 0, startDay: 0, currentX: 0, rowTl: null },
@@ -2666,6 +2666,7 @@ const canvas = document.getElementById('fb-canvas');
 const ctx    = canvas.getContext('2d');
 const fb     = document.getElementById('fb');
 let W = 0, H = 0;
+let _initialScaleSet = false;
 
 function resize() {
   W = fb.clientWidth;
@@ -2674,8 +2675,18 @@ function resize() {
   canvas.height = H * devicePixelRatio;
   canvas.style.width  = W + 'px';
   canvas.style.height = H + 'px';
-  // setTransform remplace toute transformation existante (pas d'accumulation)
   ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+
+  // Au premier resize, si aucune rubrique chargée, cadrer 1800 → aujourd'hui
+  if (!_initialScaleSet && W > 0 && state.timelines.length === 0) {
+    const day1800 = tupleToDays([-1, 1800, 1, 1]);
+    const dayNow  = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()]);
+    const span    = dayNow - day1800;
+    state.scale     = W / span;                  // toute la période tient dans la largeur
+    state.centerDay = day1800 + span / 2;        // centré sur le milieu
+    _initialScaleSet = true;
+  }
+
   render();
 }
 
@@ -4855,32 +4866,10 @@ function buildFA() {
       <button class="tl-del-btn" title="Supprimer cette rubrique et ses événements">🗑</button>
     `;
     el.addEventListener('click', e => {
-      if (e.target.closest('button') || e.target.closest('.tl-drag-handle') || e.target.closest('.tl-ref-input')) return;
+      if (e.target.closest('button') || e.target.closest('.tl-drag-handle')) return;
       toggleTimeline(tl.id);
     });
 
-    // Champ ref — sauvegarde locale + Supabase au blur
-    const refInput = el.querySelector('.tl-ref-input');
-    refInput.addEventListener('click', e => e.stopPropagation());
-    refInput.addEventListener('blur', async () => {
-      const newRef = refInput.value.trim() || null;
-      if (newRef === (tl.ref || null)) return; // pas de changement
-      tl.ref = newRef;
-      buildRefMap();
-      // Sauvegarder dans Supabase si la rubrique vient de là (id non temporaire)
-      if (!tl.id.startsWith('sub_') && !tl.id.startsWith('r_tmp')) {
-        try {
-          await sbFetch(
-            sbUrl('rubriques', `?id=eq.${encodeURIComponent(tl.id)}`),
-            { method: 'PATCH', body: JSON.stringify({ ref: newRef }) }
-          );
-        } catch(e) { console.warn('[ref save]', e); }
-      }
-    });
-    refInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') refInput.blur();
-      if (e.key === 'Escape') { refInput.value = tl.ref || ''; refInput.blur(); }
-    });
     el.querySelector('.tl-zoom-btn').addEventListener('click', e => {
       e.stopPropagation(); zoomToTimeline(tl.id);
     });
@@ -5373,8 +5362,9 @@ function addFromCatalogue(id, ensureParentId) {
   }
 
   // Insérer chaque ancêtre manquant dans state.timelines (racine en premier)
-  // Si déjà présent mais désactivé, le réactiver
+  // Les grandes familles (niveau 0) sont exclues — elles ne s'affichent pas dans la frise
   ancestors.forEach(ancestor => {
+    if (ancestor.niveau === 0) return; // famille de niveau 0 → pas dans la frise
     const existing = state.timelines.find(t => t.id === ancestor.id);
     if (existing) {
       if (!existing.enabled) { existing.enabled = true; if (ancestor.parentId) syncParentRange(ancestor.parentId); }
@@ -5396,7 +5386,16 @@ function addFromCatalogue(id, ensureParentId) {
     }
   });
 
-  // ── Charger la rubrique elle-même — réactiver si déjà présente ─
+  // ── Charger la rubrique elle-même — uniquement si pas niveau 0 ─
+  if (cat.niveau === 0) {
+    // Grande famille : on charge toutes ses rubriques enfants directement
+    const enfants = catalogueData.filter(c => c.parentId === id && c.niveau !== 0);
+    enfants.forEach(enfant => addFromCatalogue(enfant.id, id));
+    buildFA();
+    buildCatalogueList(document.getElementById('cat-search').value);
+    render();
+    return;
+  }
   const existingTl = state.timelines.find(t => t.id === id);
   if (existingTl) {
     if (!existingTl.enabled) {
