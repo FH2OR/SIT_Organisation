@@ -16,7 +16,7 @@
     --text:      #e8edf4;
     --text-dim:  #7a93b4;
     --text-mid:  #aabdd4;
-    --header-h:  62px;
+    --header-h:  72px;
     --footer-h:  90px;
     --fa-w:      300px;
     --fc-w:      340px;
@@ -88,41 +88,58 @@
   #z1 .info { font-size: 14px; color: var(--text-mid); }
   #z1 .hints { font-size: 13px; color: var(--text-dim); letter-spacing: 0.3px; }
 
-  #z1 .version-badge {
+  /* ── Badges version (appli + data) — même forme ─────────── */
+  #z1 .version-badge,
+  #z1 .data-badge {
+    display: inline-block;
     font-size: 10px; font-weight: 700; letter-spacing: 1px;
-    color: var(--bg); background: var(--accent);
-    padding: 2px 6px; border-radius: 3px;
+    padding: 3px 8px; border-radius: 3px;
     vertical-align: middle; margin-left: 6px;
     font-family: 'Source Sans 3', sans-serif;
-    text-transform: uppercase;
-  }
-  #z1 .data-badge {
-    font-size: 10px; font-weight: 700; letter-spacing: 1px;
-    color: var(--accent2); background: rgba(142,202,230,0.15);
-    border: 1px solid rgba(142,202,230,0.4);
-    padding: 2px 6px; border-radius: 3px;
-    vertical-align: middle; margin-left: 4px;
-    font-family: 'Source Sans 3', sans-serif;
     text-transform: uppercase; cursor: pointer;
-    transition: background .15s;
+    transition: opacity .15s;
+    border: none;
   }
-  #z1 .data-badge:hover { background: rgba(142,202,230,0.28); }
+  #z1 .version-badge {
+    color: var(--bg); background: var(--accent);
+  }
+  #z1 .version-badge:hover { opacity: 0.85; }
+  #z1 .data-badge {
+    color: var(--bg); background: var(--accent2);
+  }
+  #z1 .data-badge:hover { opacity: 0.85; }
 
-  /* ── Popup historicData ─────────────────────────────────── */
+  /* ── Tooltip survol badge appli ─────────────────────────── */
+  #appli-tooltip {
+    display: none; position: fixed; z-index: 1000;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 5px; padding: 7px 12px;
+    font-size: 11px; color: var(--text-mid);
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    pointer-events: none; white-space: nowrap;
+  }
+  #appli-tooltip.show { display: block; }
+
+  /* ── Popup historicData — large et flottante ────────────── */
   #data-popup {
     display: none; position: fixed; z-index: 999;
     background: #2a3d5c;
     border: 1px solid rgba(142,202,230,.35);
     border-top: 2px solid var(--accent2);
-    border-radius: 6px; padding: 0;
-    min-width: 340px; max-width: 460px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    border-radius: 8px; padding: 0;
+    width: 680px; max-width: 90vw;
+    max-height: 70vh;
+    display: none; flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    /* draggable */
+    cursor: default;
   }
-  #data-popup.open { display: block; }
+  #data-popup.open { display: flex; }
   #data-popup .dp-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 12px 18px 10px;
     border-bottom: 1px solid rgba(142,202,230,.2);
+    cursor: move; flex-shrink: 0;
   }
   #data-popup .dp-title {
     font-family: 'Cinzel', serif; font-size: 13px;
@@ -135,28 +152,32 @@
   #data-popup .dp-close:hover { color: var(--text); }
   #data-popup .dp-body {
     padding: 10px 18px 14px;
-    max-height: 320px; overflow-y: auto;
+    flex: 1; overflow-y: auto;
   }
   #data-popup .dp-body::-webkit-scrollbar { width: 4px; }
   #data-popup .dp-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   #data-popup .dp-row {
-    display: flex; align-items: baseline; gap: 10px;
-    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
     font-size: 12px;
   }
   #data-popup .dp-row:last-child { border-bottom: none; }
   #data-popup .dp-version {
     font-weight: 700; color: var(--accent2); flex-shrink: 0;
-    font-family: 'Cinzel', serif; font-size: 11px; min-width: 50px;
+    font-family: 'Cinzel', serif; font-size: 11px; min-width: 55px;
   }
   #data-popup .dp-date {
-    color: var(--text-dim); flex-shrink: 0; font-size: 11px; min-width: 80px;
+    color: var(--text-dim); flex-shrink: 0; font-size: 11px; min-width: 90px;
   }
-  #data-popup .dp-contenu { color: var(--text-mid); flex: 1; line-height: 1.5; }
+  #data-popup .dp-contenu {
+    color: var(--text-mid); flex: 1; line-height: 1.6;
+    word-break: break-word;
+  }
   #data-popup .dp-empty { color: var(--text-dim); font-size: 12px; padding: 10px 0; }
   #data-popup .dp-footer {
     padding: 8px 18px 12px; text-align: right;
     border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
   }
   #data-popup .dp-btn-close {
     font-size: 12px; padding: 5px 16px; border-radius: 4px; cursor: pointer;
@@ -2116,9 +2137,15 @@
 
 
 <div id="z1">
-  <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.47 — Version Beta</span></span>
-    <span class="data-badge" id="data-version-badge" onclick="event.stopPropagation(); toggleDataPopup(event)" title="Version des données">📊 données…</span>
+  <div class="app-title">
+    <span class="sit-main">⏳ S.I.T.
+      <span class="version-badge" id="appli-version-badge"
+        onclick="toggleAbout(event)"
+        onmouseenter="showAppliTooltip(event)"
+        onmouseleave="hideAppliTooltip()">v0.9.48 — Beta</span>
+      <span class="data-badge" id="data-version-badge"
+        onclick="toggleDataPopup(event)">📊 données…</span>
+    </span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -6244,6 +6271,41 @@ function toggleAbout(e) {
   }, 0);
 }
 
+// ── Tooltip badge appli ───────────────────────────────────────
+function showAppliTooltip(e) {
+  const tt = document.getElementById('appli-tooltip');
+  const r  = e.target.getBoundingClientRect();
+  tt.style.top  = (r.bottom + 6) + 'px';
+  tt.style.left = r.left + 'px';
+  tt.classList.add('show');
+}
+function hideAppliTooltip() {
+  document.getElementById('appli-tooltip').classList.remove('show');
+}
+
+// ── Drag de la popup data ─────────────────────────────────────
+(function() {
+  let dragging = false, ox = 0, oy = 0;
+  document.addEventListener('DOMContentLoaded', () => {
+    const popup  = document.getElementById('data-popup');
+    const header = popup.querySelector('.dp-header');
+    header.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      dragging = true;
+      ox = e.clientX - popup.offsetLeft;
+      oy = e.clientY - popup.offsetTop;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      popup.style.left = (e.clientX - ox) + 'px';
+      popup.style.top  = (e.clientY - oy) + 'px';
+      popup.style.right = 'auto';
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+  });
+})();
+
 // ── Popup version données ────────────────────────────────────
 async function toggleDataPopup(e) {
   const popup = document.getElementById('data-popup');
@@ -6252,11 +6314,10 @@ async function toggleDataPopup(e) {
   // Fermer le popup about s'il est ouvert
   document.getElementById('about-popup').classList.remove('open');
 
-  // Positionner sous le badge
-  const badge = document.getElementById('data-version-badge');
-  const r = badge.getBoundingClientRect();
-  popup.style.top  = (r.bottom + 8) + 'px';
-  popup.style.left = Math.max(8, r.left) + 'px';
+  // Positionner au centre de l'écran
+  popup.style.top   = Math.max(80, (window.innerHeight - 500) / 2) + 'px';
+  popup.style.left  = Math.max(20, (window.innerWidth  - 680) / 2) + 'px';
+  popup.style.right = 'auto';
   popup.classList.add('open');
 
   // Charger les données
@@ -8718,6 +8779,9 @@ async function showWelcomeMessage() {
 })();
 </script>
 <!-- Popup À propos -->
+<!-- ── Tooltip badge appli ── -->
+<div id="appli-tooltip">🖥️ Version de l'application</div>
+
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
