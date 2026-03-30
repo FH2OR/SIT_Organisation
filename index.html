@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.52 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.53 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -7578,21 +7578,25 @@ async function authRegister() {
 // ── Enregistrer la connexion dans Supabase ────────────────────
 async function logConnexion() {
   if (!currentUser) return;
-  // Récupérer l'IP publique via un service externe
   let ip = '—';
   try {
     const r = await fetch('https://api.ipify.org?format=json');
     if (r.ok) { const d = await r.json(); ip = d.ip || '—'; }
-  } catch(e) { /* pas d'IP disponible */ }
+  } catch(e) { console.warn('[connexion] IP non disponible:', e.message); }
 
-  await sbFetch(sbUrl('connexions'), {
-    method: 'POST',
-    body: JSON.stringify({
-      user_id:  currentUser.id,
-      username: currentProfil?.username || currentUser.email || '—',
-      ip
-    })
-  });
+  try {
+    const res = await sbFetch(sbUrl('connexions'), {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id:  currentUser.id,
+        username: currentProfil?.username || currentUser.email || '—',
+        ip
+      })
+    });
+    console.log('[connexion] enregistrée ✓ ip:', ip);
+  } catch(e) {
+    console.error('[connexion] erreur insertion:', e.message);
+  }
 }
 
 async function authLogout() {
