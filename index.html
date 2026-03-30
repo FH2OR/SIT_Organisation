@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.51 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.52 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -7575,6 +7575,26 @@ async function authRegister() {
 }
 
 // ── Déconnexion ───────────────────────────────────────────────
+// ── Enregistrer la connexion dans Supabase ────────────────────
+async function logConnexion() {
+  if (!currentUser) return;
+  // Récupérer l'IP publique via un service externe
+  let ip = '—';
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    if (r.ok) { const d = await r.json(); ip = d.ip || '—'; }
+  } catch(e) { /* pas d'IP disponible */ }
+
+  await sbFetch(sbUrl('connexions'), {
+    method: 'POST',
+    body: JSON.stringify({
+      user_id:  currentUser.id,
+      username: currentProfil?.username || currentUser.email || '—',
+      ip
+    })
+  });
+}
+
 async function authLogout() {
   try {
     if (authToken) {
@@ -7626,13 +7646,13 @@ async function onLoginSuccess(authData) {
     });
     const profils = res.ok ? await res.json() : [];
     currentProfil = profils?.[0] || null;
-    console.log('[auth] profil chargé:', currentProfil);
-    console.log('[auth] user.id:', currentUser.id);
-    console.log('[auth] profils raw:', profils);
   } catch(e) {
     console.warn('[auth] échec chargement profil:', e.message);
     currentProfil = null;
   }
+
+  // Enregistrer la connexion (IP, date, utilisateur) — silencieux
+  logConnexion().catch(() => {});
 
   updateAuthUI();
 
