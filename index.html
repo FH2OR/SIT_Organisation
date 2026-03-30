@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.53 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.54 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -7582,10 +7582,10 @@ async function logConnexion() {
   try {
     const r = await fetch('https://api.ipify.org?format=json');
     if (r.ok) { const d = await r.json(); ip = d.ip || '—'; }
-  } catch(e) { console.warn('[connexion] IP non disponible:', e.message); }
+  } catch(e) { /* IP non disponible */ }
 
   try {
-    const res = await sbFetch(sbUrl('connexions'), {
+    await sbFetch(sbUrl('connexions'), {
       method: 'POST',
       body: JSON.stringify({
         user_id:  currentUser.id,
@@ -7593,10 +7593,7 @@ async function logConnexion() {
         ip
       })
     });
-    console.log('[connexion] enregistrée ✓ ip:', ip);
-  } catch(e) {
-    console.error('[connexion] erreur insertion:', e.message);
-  }
+  } catch(e) { /* silencieux */ }
 }
 
 async function authLogout() {
