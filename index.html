@@ -96,6 +96,75 @@
     font-family: 'Source Sans 3', sans-serif;
     text-transform: uppercase;
   }
+  #z1 .data-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    color: var(--accent2); background: rgba(142,202,230,0.15);
+    border: 1px solid rgba(142,202,230,0.4);
+    padding: 2px 6px; border-radius: 3px;
+    vertical-align: middle; margin-left: 4px;
+    font-family: 'Source Sans 3', sans-serif;
+    text-transform: uppercase; cursor: pointer;
+    transition: background .15s;
+  }
+  #z1 .data-badge:hover { background: rgba(142,202,230,0.28); }
+
+  /* ── Popup historicData ─────────────────────────────────── */
+  #data-popup {
+    display: none; position: fixed; z-index: 999;
+    background: #2a3d5c;
+    border: 1px solid rgba(142,202,230,.35);
+    border-top: 2px solid var(--accent2);
+    border-radius: 6px; padding: 0;
+    min-width: 340px; max-width: 460px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+  #data-popup.open { display: block; }
+  #data-popup .dp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px 10px;
+    border-bottom: 1px solid rgba(142,202,230,.2);
+  }
+  #data-popup .dp-title {
+    font-family: 'Cinzel', serif; font-size: 13px;
+    color: var(--accent2); letter-spacing: 1px;
+  }
+  #data-popup .dp-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 16px; cursor: pointer; padding: 0; line-height: 1;
+  }
+  #data-popup .dp-close:hover { color: var(--text); }
+  #data-popup .dp-body {
+    padding: 10px 18px 14px;
+    max-height: 320px; overflow-y: auto;
+  }
+  #data-popup .dp-body::-webkit-scrollbar { width: 4px; }
+  #data-popup .dp-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  #data-popup .dp-row {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 12px;
+  }
+  #data-popup .dp-row:last-child { border-bottom: none; }
+  #data-popup .dp-version {
+    font-weight: 700; color: var(--accent2); flex-shrink: 0;
+    font-family: 'Cinzel', serif; font-size: 11px; min-width: 50px;
+  }
+  #data-popup .dp-date {
+    color: var(--text-dim); flex-shrink: 0; font-size: 11px; min-width: 80px;
+  }
+  #data-popup .dp-contenu { color: var(--text-mid); flex: 1; line-height: 1.5; }
+  #data-popup .dp-empty { color: var(--text-dim); font-size: 12px; padding: 10px 0; }
+  #data-popup .dp-footer {
+    padding: 8px 18px 12px; text-align: right;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  #data-popup .dp-btn-close {
+    font-size: 12px; padding: 5px 16px; border-radius: 4px; cursor: pointer;
+    background: rgba(142,202,230,0.1); border: 1px solid rgba(142,202,230,0.3);
+    color: var(--accent2); font-family: 'Source Sans 3', sans-serif;
+    transition: background .15s;
+  }
+  #data-popup .dp-btn-close:hover { background: rgba(142,202,230,0.22); }
   #btn-fs {
     flex-shrink: 0;
     background: transparent;
@@ -2048,7 +2117,8 @@
 
 <div id="z1">
   <div class="app-title" onclick="toggleAbout(event)">
-    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.45 — Version Beta</span></span>
+    <span class="sit-main">⏳ S.I.T. <span class="version-badge">v0.9.47 — Version Beta</span></span>
+    <span class="data-badge" id="data-version-badge" onclick="event.stopPropagation(); toggleDataPopup(event)" title="Version des données">📊 données…</span>
   </div>
   <div class="sep"></div>
   <button id="btn-user" onclick="toggleUserPanel(event)" title="Mon profil">👤 Anonyme</button>
@@ -6159,6 +6229,7 @@ function toggleAbout(e) {
     popup.classList.remove('open');
     return;
   }
+  closeDataPopup();
   const r = e.currentTarget.getBoundingClientRect();
   popup.style.top  = (r.bottom + 8) + 'px';
   popup.style.left = r.left + 'px';
@@ -6171,6 +6242,59 @@ function toggleAbout(e) {
       }
     });
   }, 0);
+}
+
+// ── Popup version données ────────────────────────────────────
+async function toggleDataPopup(e) {
+  const popup = document.getElementById('data-popup');
+  if (popup.classList.contains('open')) { closeDataPopup(); return; }
+
+  // Fermer le popup about s'il est ouvert
+  document.getElementById('about-popup').classList.remove('open');
+
+  // Positionner sous le badge
+  const badge = document.getElementById('data-version-badge');
+  const r = badge.getBoundingClientRect();
+  popup.style.top  = (r.bottom + 8) + 'px';
+  popup.style.left = Math.max(8, r.left) + 'px';
+  popup.classList.add('open');
+
+  // Charger les données
+  const body = document.getElementById('data-popup-body');
+  body.innerHTML = '<div class="dp-empty">Chargement…</div>';
+  try {
+    const rows = await sbFetch(sbUrl('historicdata', '?select=version,date,contenu&order=date.desc'));
+    if (!rows || !rows.length) {
+      body.innerHTML = '<div class="dp-empty">Aucune entrée pour l\'instant.</div>';
+    } else {
+      // Mettre à jour le badge avec la dernière version
+      document.getElementById('data-version-badge').textContent = '📊 ' + rows[0].version;
+      body.innerHTML = rows.map(r => `
+        <div class="dp-row">
+          <span class="dp-version">${escHtml(r.version)}</span>
+          <span class="dp-date">${r.date ? new Date(r.date).toLocaleDateString('fr-FR') : ''}</span>
+          <span class="dp-contenu">${escHtml(r.contenu || '')}</span>
+        </div>`).join('');
+    }
+  } catch(err) {
+    body.innerHTML = `<div class="dp-empty">Erreur : ${escHtml(err.message)}</div>`;
+  }
+
+  // Fermer sur clic extérieur
+  setTimeout(() => {
+    document.addEventListener('click', function closeData(ev) {
+      const popup = document.getElementById('data-popup');
+      const badge = document.getElementById('data-version-badge');
+      if (!popup.contains(ev.target) && ev.target !== badge) {
+        closeDataPopup();
+        document.removeEventListener('click', closeData);
+      }
+    });
+  }, 0);
+}
+
+function closeDataPopup() {
+  document.getElementById('data-popup').classList.remove('open');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -8491,6 +8615,16 @@ async function splashLoadNews() {
   } catch(e) { console.warn('[splash news]', e.message); }
 }
 
+// ── Charger la dernière version data pour le badge ────────────
+async function loadDataVersion() {
+  try {
+    const rows = await sbFetch(sbUrl('historicdata', '?select=version&order=date.desc&limit=1'));
+    if (rows && rows.length > 0) {
+      document.getElementById('data-version-badge').textContent = '📊 ' + rows[0].version;
+    }
+  } catch(e) { /* silencieux */ }
+}
+
 // ── Message de bienvenue abonné ───────────────────────────────
 async function showWelcomeMessage() {
   const el = document.getElementById('z1-welcome');
@@ -8547,6 +8681,7 @@ async function showWelcomeMessage() {
   // Charger les photos et les nouveautés pour l'écran de connexion
   splashLoadPhotos();
   splashLoadNews();
+  loadDataVersion();
   // 1. Charger la config depuis Supabase (paramètres LOD, admin, etc.)
   await loadAppConfig();
   // 2. Charger le catalogue et restaurer la dernière vue
@@ -8586,10 +8721,24 @@ async function showWelcomeMessage() {
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.9 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span>0.9.45 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
+</div>
+
+<!-- ── Popup version données ── -->
+<div id="data-popup">
+  <div class="dp-header">
+    <span class="dp-title">📊 Historique des données</span>
+    <button class="dp-close" onclick="closeDataPopup()">✕</button>
+  </div>
+  <div class="dp-body" id="data-popup-body">
+    <div class="dp-empty">Chargement…</div>
+  </div>
+  <div class="dp-footer">
+    <button class="dp-btn-close" onclick="closeDataPopup()">Fermer</button>
+  </div>
 </div>
 
 <!-- ── Fenêtre de recherche ── -->
