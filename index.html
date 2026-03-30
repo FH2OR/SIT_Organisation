@@ -94,22 +94,17 @@
   /* ── Badges version (appli + data) — même forme ─────────── */
   #z1 .version-badge,
   #z1 .data-badge {
-    display: inline-block;
-    font-size: 10px; font-weight: 700; letter-spacing: 1px;
-    padding: 3px 8px; border-radius: 3px;
-    vertical-align: middle; margin-left: 6px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; letter-spacing: .8px;
+    padding: 4px 10px; border-radius: 4px;
     font-family: 'Source Sans 3', sans-serif;
     text-transform: uppercase; cursor: pointer;
-    transition: opacity .15s;
-    border: none;
+    transition: opacity .15s; border: none;
+    white-space: nowrap;
   }
-  #z1 .version-badge {
-    color: var(--bg); background: var(--accent);
-  }
+  #z1 .version-badge { color: var(--bg); background: var(--accent); }
   #z1 .version-badge:hover { opacity: 0.85; }
-  #z1 .data-badge {
-    color: var(--bg); background: var(--accent2);
-  }
+  #z1 .data-badge { color: var(--bg); background: var(--accent2); }
   #z1 .data-badge:hover { opacity: 0.85; }
 
   /* ── Tooltip badges ─────────────────────────────────────── */
@@ -2139,21 +2134,21 @@
 
 
 <div id="z1">
-  <div class="app-title">
-    <span class="sit-main">⏳ S.I.T.
-      <span class="badges-col">
-        <span class="version-badge" id="appli-version-badge"
-          onclick="toggleAbout(event)"
-          onmouseenter="showAppliTooltip(event)"
-          onmouseleave="hideAppliTooltip()">
-          ⚙ v0.9.49 — Beta
-        </span>
-        <span class="data-badge" id="data-version-badge"
-          onclick="toggleDataPopup(event)"
-          onmouseenter="showDataTooltip(event)"
-          onmouseleave="hideDataTooltip()">
-          📖 données…
-        </span>
+  <div class="app-title" style="display:flex;align-items:center;gap:10px">
+    <img src="https://nigumnkmjlazbmobexqx.supabase.co/storage/v1/object/public/assets/logoMars2026.png"
+         alt="S.I.T." style="height:54px;width:auto;display:block;object-fit:contain;flex-shrink:0">
+    <span class="badges-col">
+      <span class="version-badge" id="appli-version-badge"
+        onclick="toggleAbout(event)"
+        onmouseenter="showAppliTooltip(event)"
+        onmouseleave="hideAppliTooltip()">
+        <span style="font-size:13px">⚙</span> v0.9.50 — Beta
+      </span>
+      <span class="data-badge" id="data-version-badge"
+        onclick="toggleDataPopup(event)"
+        onmouseenter="showDataTooltip(event)"
+        onmouseleave="hideDataTooltip()">
+        <span style="font-size:13px">📖</span> données…
       </span>
     </span>
   </div>
