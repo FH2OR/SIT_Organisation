@@ -39,10 +39,13 @@
     letter-spacing: 2px; text-transform: uppercase;
     white-space: nowrap;
     line-height: 1.15;
-    cursor: pointer;
   }
   #z1 .app-title .sit-main {
     font-size: 19px; font-weight: 700; display: block;
+  }
+  #z1 .badges-col {
+    display: inline-flex; flex-direction: column; gap: 3px;
+    vertical-align: middle; margin-left: 8px;
   }
 
   /* ── Popup "À propos" ──────────────────────────────────── */
@@ -109,8 +112,8 @@
   }
   #z1 .data-badge:hover { opacity: 0.85; }
 
-  /* ── Tooltip survol badge appli ─────────────────────────── */
-  #appli-tooltip {
+  /* ── Tooltip badges ─────────────────────────────────────── */
+  #appli-tooltip, #data-tooltip {
     display: none; position: fixed; z-index: 1000;
     background: var(--bg3); border: 1px solid var(--border);
     border-radius: 5px; padding: 7px 12px;
@@ -118,21 +121,20 @@
     box-shadow: 0 4px 16px rgba(0,0,0,.4);
     pointer-events: none; white-space: nowrap;
   }
-  #appli-tooltip.show { display: block; }
+  #appli-tooltip.show, #data-tooltip.show { display: block; }
 
-  /* ── Popup historicData — large et flottante ────────────── */
+  /* ── Popup historicData — large, flottante, redimensionnable ── */
   #data-popup {
     display: none; position: fixed; z-index: 999;
     background: #2a3d5c;
     border: 1px solid rgba(142,202,230,.35);
     border-top: 2px solid var(--accent2);
     border-radius: 8px; padding: 0;
-    width: 680px; max-width: 90vw;
-    max-height: 70vh;
-    display: none; flex-direction: column;
+    width: 680px; min-width: 400px; max-width: 95vw;
+    height: 500px; min-height: 200px; max-height: 90vh;
+    flex-direction: column;
     box-shadow: 0 12px 40px rgba(0,0,0,.5);
-    /* draggable */
-    cursor: default;
+    resize: both; overflow: hidden;
   }
   #data-popup.open { display: flex; }
   #data-popup .dp-header {
@@ -2139,12 +2141,20 @@
 <div id="z1">
   <div class="app-title">
     <span class="sit-main">⏳ S.I.T.
-      <span class="version-badge" id="appli-version-badge"
-        onclick="toggleAbout(event)"
-        onmouseenter="showAppliTooltip(event)"
-        onmouseleave="hideAppliTooltip()">v0.9.48 — Beta</span>
-      <span class="data-badge" id="data-version-badge"
-        onclick="toggleDataPopup(event)">📊 données…</span>
+      <span class="badges-col">
+        <span class="version-badge" id="appli-version-badge"
+          onclick="toggleAbout(event)"
+          onmouseenter="showAppliTooltip(event)"
+          onmouseleave="hideAppliTooltip()">
+          ⚙ v0.9.49 — Beta
+        </span>
+        <span class="data-badge" id="data-version-badge"
+          onclick="toggleDataPopup(event)"
+          onmouseenter="showDataTooltip(event)"
+          onmouseleave="hideDataTooltip()">
+          📖 données…
+        </span>
+      </span>
     </span>
   </div>
   <div class="sep"></div>
@@ -6282,6 +6292,16 @@ function showAppliTooltip(e) {
 function hideAppliTooltip() {
   document.getElementById('appli-tooltip').classList.remove('show');
 }
+function showDataTooltip(e) {
+  const tt = document.getElementById('data-tooltip');
+  const r  = e.target.getBoundingClientRect();
+  tt.style.top  = (r.bottom + 6) + 'px';
+  tt.style.left = r.left + 'px';
+  tt.classList.add('show');
+}
+function hideDataTooltip() {
+  document.getElementById('data-tooltip').classList.remove('show');
+}
 
 // ── Drag de la popup data ─────────────────────────────────────
 (function() {
@@ -8781,6 +8801,8 @@ async function showWelcomeMessage() {
 <!-- Popup À propos -->
 <!-- ── Tooltip badge appli ── -->
 <div id="appli-tooltip">🖥️ Version de l'application</div>
+<!-- ── Tooltip badge data ── -->
+<div id="data-tooltip">📖 Version des données</div>
 
 <div id="about-popup">
   <div class="about-title">⏳ S.I.T.</div>
