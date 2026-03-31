@@ -1,6 +1,7 @@
 {
-  "name": "sitorganisation",
+  "name": "sitorga",
   "compatibility_date": "2026-03-20",
+  "main": "./worker.js",
   "assets": {
     "directory": "./",
     "not_found_handling": "single-page-application"
