@@ -2523,6 +2523,25 @@
         <div class="fc-photo-wrap" id="fc-photo-wrap" style="display:none">
           <img id="fc-photo-img" src="" alt="">
         </div>
+        <!-- Bloc Wikipedia -->
+        <div id="fc-wiki-block" style="display:none">
+          <div class="fc-sep"></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim)">📖 Wikipedia</span>
+            <a id="fc-wiki-link" href="#" target="_blank"
+               style="font-size:11px;color:var(--accent2);text-decoration:none;margin-left:auto">
+              Voir l'article ↗
+            </a>
+          </div>
+          <div id="fc-wiki-photo-wrap" style="display:none;margin-bottom:8px;border-radius:5px;overflow:hidden;border:1px solid var(--border)">
+            <img id="fc-wiki-photo" src="" alt="" style="width:100%;max-height:160px;object-fit:cover;display:block">
+          </div>
+          <div id="fc-wiki-summary"
+               style="font-size:12px;color:var(--text-mid);line-height:1.6;max-height:120px;overflow-y:auto;
+                      padding-right:4px;scrollbar-width:thin"></div>
+          <div id="fc-wiki-modified"
+               style="font-size:10px;color:var(--text-dim);margin-top:5px;text-align:right"></div>
+        </div>
         <div class="fc-sep"></div>
         <div class="fc-label">Commentaire</div>
         <div class="fc-comment" id="fc-comment"></div>
@@ -6620,7 +6639,11 @@ async function dbPullCatalogue() {
           zone:       e.zone || null,
           ref:        e.ref  || null,
           dep:        e.dep  || null,
-          importance: e.importance != null ? e.importance : 5
+          importance: e.importance != null ? e.importance : 5,
+          wikiTitle:  e.wiki_title || null,
+          wikiSummary: e.wiki_summary || null,
+          wikiImage:  e.wiki_image || null,
+          wikiLastModified: e.wiki_last_modified || null
         });
       } else {
         cat._events.push({
@@ -6636,7 +6659,11 @@ async function dbPullCatalogue() {
           zone:       e.zone || null,
           ref:        e.ref  || null,
           dep:        e.dep  || null,
-          importance: e.importance != null ? e.importance : 5
+          importance: e.importance != null ? e.importance : 5,
+          wikiTitle:  e.wiki_title || null,
+          wikiSummary: e.wiki_summary || null,
+          wikiImage:  e.wiki_image || null,
+          wikiLastModified: e.wiki_last_modified || null
         });
       }
     });
@@ -7575,7 +7602,129 @@ async function authRegister() {
 }
 
 // ── Déconnexion ───────────────────────────────────────────────
-// ── Enregistrer la connexion dans Supabase ────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  INTÉGRATION WIKIPEDIA
+// ═══════════════════════════════════════════════════════════════
+
+// Cache mémoire pour éviter de re-fetcher pendant la session
+const _wikiCache = {};
+
+async function fetchWikipedia(wikiTitle) {
+  if (!wikiTitle) return null;
+  if (_wikiCache[wikiTitle]) return _wikiCache[wikiTitle];
+
+  try {
+    const url = 'https://fr.wikipedia.org/w/api.php?' + new URLSearchParams({
+      action:      'query',
+      titles:      wikiTitle,
+      prop:        'extracts|pageimages|revisions|info',
+      exintro:     true,
+      explaintext: true,
+      pithumbsize: 600,
+      inprop:      'url',
+      rvprop:      'timestamp',
+      redirects:   '',
+      format:      'json',
+      origin:      '*',
+    });
+    const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    const page = Object.values(data.query.pages)[0];
+    if (page.missing !== undefined) return null;
+
+    const result = {
+      title:        page.title,
+      summary:      page.extract || '',
+      image:        page.thumbnail?.source || null,
+      url:          page.fullurl || `https://fr.wikipedia.org/wiki/${wikiTitle}`,
+      lastModified: page.revisions?.[0]?.timestamp || null,
+    };
+    _wikiCache[wikiTitle] = result;
+    return result;
+  } catch(e) {
+    console.warn('[wiki] fetch error:', e.message);
+    return null;
+  }
+}
+
+// Afficher le bloc Wikipedia dans le panneau FC
+async function showWikiBlock(evt) {
+  const block = document.getElementById('fc-wiki-block');
+
+  // Si données déjà en cache dans l'événement → affichage immédiat
+  if (evt.wikiSummary || evt.wikiImage) {
+    renderWikiBlock({
+      summary:      evt.wikiSummary || '',
+      image:        evt.wikiImage || null,
+      url:          evt.wikiTitle ? `https://fr.wikipedia.org/wiki/${evt.wikiTitle}` : null,
+      lastModified: evt.wikiLastModified,
+    });
+    block.style.display = 'block';
+    // Fetch en arrière-plan pour mise à jour si nécessaire
+    if (evt.wikiTitle) fetchWikipedia(evt.wikiTitle).then(w => { if (w) renderWikiBlock(w); });
+    return;
+  }
+
+  // Pas de cache → fetch Wikipedia
+  if (!evt.wikiTitle) { block.style.display = 'none'; return; }
+
+  block.style.display = 'block';
+  document.getElementById('fc-wiki-summary').textContent = 'Chargement Wikipedia…';
+  document.getElementById('fc-wiki-photo-wrap').style.display = 'none';
+  document.getElementById('fc-wiki-modified').textContent = '';
+
+  const w = await fetchWikipedia(evt.wikiTitle);
+  if (!w) {
+    block.style.display = 'none';
+    return;
+  }
+  renderWikiBlock(w);
+
+  // Sauvegarder dans Supabase pour la prochaine fois
+  const sbId = evt.id?.replace('sb_', '');
+  if (sbId && /^\d+$/.test(sbId)) {
+    sbFetch(sbUrl('evenements', `?id=eq.${sbId}`), {
+      method: 'PATCH',
+      body: JSON.stringify({
+        wiki_summary:       w.summary.slice(0, 3000),
+        wiki_image:         w.image,
+        wiki_last_modified: w.lastModified
+      })
+    }).catch(() => {});
+  }
+}
+
+function renderWikiBlock(w) {
+  if (!w) return;
+  // Résumé — tronquer à 400 caractères
+  const summary = w.summary?.length > 400
+    ? w.summary.slice(0, 400) + '…'
+    : (w.summary || '');
+  document.getElementById('fc-wiki-summary').textContent = summary;
+
+  // Photo
+  const photoWrap = document.getElementById('fc-wiki-photo-wrap');
+  const photoImg  = document.getElementById('fc-wiki-photo');
+  if (w.image) {
+    photoImg.src = w.image;
+    photoWrap.style.display = 'block';
+  } else {
+    photoWrap.style.display = 'none';
+  }
+
+  // Lien
+  if (w.url) {
+    const link = document.getElementById('fc-wiki-link');
+    link.href = w.url;
+  }
+
+  // Dernière modification
+  if (w.lastModified) {
+    const d = new Date(w.lastModified);
+    document.getElementById('fc-wiki-modified').textContent =
+      'Mis à jour sur Wikipedia le ' + d.toLocaleDateString('fr-FR');
+  }
+}
 async function logConnexion() {
   if (!currentUser) return;
   let ip = '—';
