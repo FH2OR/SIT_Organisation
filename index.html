@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.55 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.56 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -5882,7 +5882,13 @@ function showFCDetail(evt, tl) {
   } else {
     durEl.style.display = 'none';
   }
-  document.getElementById('fc-comment').textContent = evt.comment || '(aucun commentaire)';
+  const fcComment = document.getElementById('fc-comment');
+  if (evt.wikiSummary) {
+    fcComment.style.display = 'none';
+  } else {
+    fcComment.style.display = '';
+    fcComment.textContent = evt.comment || '(aucun commentaire)';
+  }
 
   // ── Zone géographique ─────────────────────────────────────
   const zoneRow = document.getElementById('fc-zone-row');
@@ -5897,7 +5903,8 @@ function showFCDetail(evt, tl) {
   // ── Photo ────────────────────────────────────────────────
   const wrap = document.getElementById('fc-photo-wrap');
   const img  = document.getElementById('fc-photo-img');
-  if (evt.photo) {
+  // Masquer la photo Supabase si une photo Wikipedia sera affichée
+  if (evt.photo && !evt.wikiImage) {
     wrap.style.display = 'block';
     img.classList.add('loading');
     img.src = '';
