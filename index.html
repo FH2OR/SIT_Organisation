@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.54 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.55 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -5911,6 +5911,9 @@ function showFCDetail(evt, tl) {
     wrap.style.display = 'none';
     img.src = '';
   }
+
+  // ── Wikipedia ─────────────────────────────────────────────
+  showWikiBlock(evt);
 
   // Slide panel in
   const fc = document.getElementById('fc');
