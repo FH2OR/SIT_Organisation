@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.58 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.59 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -4055,7 +4055,7 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     } else {
       drawSymbol(ctx, evt.symbol || 'circle', x, ptY, r,
         col,
-        isHov || isSel ? lighten(col, 0.3) : hexToRgba(col, 0.6),
+        isHov || isSel ? lighten(col, 0.3) : 'rgba(255,255,255,0.9)',
         1.5
       );
     }
@@ -4081,7 +4081,7 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
         ctx.textAlign = onRight ? 'left' : 'right';
         ctx.fillStyle = isFuturePoint
           ? hexToRgba(col, 0.6)
-          : (isHov || isSel ? 'white' : hexToRgba(col, 0.85));
+          : (isHov || isSel ? 'white' : 'rgba(255,255,255,0.92)');
         ctx.fillText(lbl, onRight ? x + r + 5 : x - r - 5, ptY + 4);
       }
     }
