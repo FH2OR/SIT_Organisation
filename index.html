@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.57 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.58 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -3152,10 +3152,11 @@ function computeSlots(events, startY, baseH, slotH, trackCount) {
     const h = t === 0 ? baseH : slotH;
     const rangeCy = curY + h / 2;
     const hasPt   = tracksWithPoints.has(t);
-    const ptTop   = curY + h;
-    const ptCy    = ptTop + PT_TRACK / 2;
+    // Les points sont dessinés sur la ligne centrale du range — pas de piste séparée
+    const ptTop   = curY;
+    const ptCy    = rangeCy;
     slots.push({ trackIdx: t, rangeTop: curY, rangeCy, rangeH: h, ptTop, ptCy, hasPt });
-    curY += h + (hasPt ? PT_TRACK : 0);
+    curY += h; // plus de PT_TRACK ajouté
   }
 
   // Piste orphelins si nécessaire (points sans dep valide)
@@ -3696,17 +3697,6 @@ function drawRow(tl, rowTop) {
     ctx.beginPath(); ctx.moveTo(0, slot.rangeCy); ctx.lineTo(W, slot.rangeCy); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Piste points intercalée si ce track a des points
-    if (slot.hasPt) {
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = hexToRgba(tl.color, 0.08);
-      ctx.fillRect(0, slot.ptTop, W, PT_TRACK);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = hexToRgba(tl.color, 0.20);
-      ctx.setLineDash([3, 7]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, slot.ptCy); ctx.lineTo(W, slot.ptCy); ctx.stroke();
-      ctx.setLineDash([]);
-    }
   });
 
   // Piste orphelins (points sans dep valide)
