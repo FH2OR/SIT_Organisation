@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.7 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.9 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -3843,16 +3843,21 @@ function drawRow(tl, rowTop) {
   tl.events.forEach(evt => {
     if (evt._auto || evt.type !== 'point') return;
     const parentRef = (evt.dep && rangeRefToTrack.has(evt.dep)) ? evt.dep : null;
-    let ptCy, ptTrackTop;
+    let ptCy, ptTrackTop, rangeBottom;
     if (parentRef) {
       const t = rangeRefToTrack.get(parentRef);
-      const slot = slots.find(s => s.trackIdx === t && s.hasPt);
-      if (slot) { ptCy = slot.ptCy; ptTrackTop = slot.ptTop; }
-      else { ptCy = orphanPtCy; ptTrackTop = orphanPtTop; }
+      const slot = slots.find(s => s.trackIdx === t);
+      if (slot) {
+        ptCy = slot.ptCy ?? slot.rangeCy;
+        ptTrackTop = slot.ptTop ?? slot.rangeTop;
+        rangeBottom = slot.rangeTop + slot.rangeH; // bord bas du range parent
+      } else {
+        ptCy = orphanPtCy; ptTrackTop = orphanPtTop; rangeBottom = orphanPtCy;
+      }
     } else {
-      ptCy = orphanPtCy; ptTrackTop = orphanPtTop;
+      ptCy = orphanPtCy; ptTrackTop = orphanPtTop; rangeBottom = orphanPtCy;
     }
-    drawEvent(evt, tl, ptCy, ptTrackTop, PT_TRACK, trackMap, altMap, showPointLabels);
+    drawEvent(evt, tl, rangeBottom, ptTrackTop, PT_TRACK, trackMap, altMap, showPointLabels);
   });
 
   // ── Sous-rubriques ───────────────────────────────────────────
@@ -4109,9 +4114,8 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
     const nowDay2 = tupleToDays([-1, new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()]);
     const isFuturePoint = evtStartDays(evt) > nowDay2;
 
-    // Positionner sur le bord bas du range (cy = centre du slot, rowH = hauteur du slot)
-    const slotH = rowH - 8;
-    const ptY = cy + slotH / 2; // bord bas du range
+    // ptY = bord bas du range parent (passé directement comme cy)
+    const ptY = cy;
 
     // Halo recherche canvas
     if (isHit && !isHov && !isSel) {
@@ -5370,7 +5374,7 @@ function closeAllVolets() {
     const v = document.getElementById(`volet-${i}`);
     if (v && v.classList.contains('open')) {
       setTimeout(((el) => () => el.classList.add('closing'))(v), delai);
-      delai += 200;
+      delai += 80;
     }
   }
 
@@ -5384,7 +5388,7 @@ function closeAllVolets() {
     vc.style.pointerEvents = '';
     _voletCloseTimer = null;
     _voletActiveItem = null;
-  }, delai + 550);
+  }, delai + 200);
 }
 
 function closeVoletsFrom(level) {
@@ -5629,6 +5633,9 @@ function addEvtAndDescendants(evt, parentEvt) {
   Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
   buildRefMap();
   render();
+  // Zoom automatique sur la timeline chargée
+  const tlLoaded = state.timelines.find(t => t.id === tlId);
+  if (tlLoaded) setTimeout(() => zoomToTimeline(tlLoaded.id), 300);
   autoSaveState();
 }
 
@@ -8478,10 +8485,10 @@ function addSingleEvent(evt, rubrique) {
   Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
   buildRefMap();
   render();
+  const tlSingle = state.timelines.find(t => t.id === tlId);
+  if (tlSingle) setTimeout(() => zoomToTimeline(tlSingle.id), 300);
   autoSaveState();
-}
-
-// ═══════════════════════════════════════════════════════════════
+}// ═══════════════════════════════════════════════════════════════
 //  RECHERCHE
 // ═══════════════════════════════════════════════════════════════
 
