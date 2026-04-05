@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.5 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.6 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -5066,7 +5066,7 @@ function buildFA() {
       <div class="tl-checkbox${tl.enabled?' checked':''}" style="border-color:${tl.color};background:${tl.enabled?tl.color:'transparent'}"></div>
       <div class="tl-label" style="color:${ensureReadable(tl.color, BG_COLOR)}">${tl.title}</div>
       <div class="tl-count">${totalEvts}</div>
-      <button class="tl-add-sub-btn" title="Ajouter une sous-rubrique">＋</button>
+      <button class="tl-add-sub-btn" title="Ajouter une sous-rubrique" style="display:none">＋</button>
       <button class="tl-zoom-btn" title="Zoomer sur cette rubrique">◀▶</button>
       <button class="tl-del-btn" title="Supprimer cette rubrique et ses événements">🗑</button>
     `;
