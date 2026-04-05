@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.2 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.3 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -7915,18 +7915,27 @@ function applyMaintenanceMode() {
 
   // Capturer les frappes clavier pour détecter le code secret
   let buffer = '';
+  let bufferTimer = null;
   const code = (appConfig.maintenance_code || '');
   if (!code) return;
 
   const handler = (e) => {
-    // Ignorer les touches de contrôle
-    if (e.key.length > 1) { buffer = ''; return; }
+    // ScrollLock réinitialise le buffer
+    if (e.key === 'ScrollLock') { buffer = ''; clearTimeout(bufferTimer); return; }
+    if (e.key.length > 1) return;
+
+    // Réinitialiser le timer d'inactivité
+    clearTimeout(bufferTimer);
+    bufferTimer = setTimeout(() => { buffer = ''; }, 2000);
+
     buffer += e.key;
     // Garder seulement les N derniers caractères (longueur du code)
     if (buffer.length > code.length) buffer = buffer.slice(-code.length);
+
     // Vérifier si le code correspond
     if (buffer === code) {
       buffer = '';
+      clearTimeout(bufferTimer);
       document.removeEventListener('keydown', handler);
       // Révéler le formulaire
       if (form) form.style.display = '';
