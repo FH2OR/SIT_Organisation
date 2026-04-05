@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.9 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.10 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -4148,55 +4148,47 @@ function drawEvent(evt, tl, cy, rowTop, rowH, trackMap, altMap, showLabels = tru
       );
     }
 
-    // Label avec anti-chevauchement : droite → gauche → '...'
+    // Label avec anti-chevauchement strict : droite → gauche → '…'
     if (showLabels || isHov || isSel) {
       ctx.font = (isHov || isSel ? 'bold 12px' : '12px') + ' "Source Sans 3", sans-serif';
 
       const lblFull = evt.title || '';
       const lblFullW = ctx.measureText(lblFull).width;
+      const margin = r + 4;
 
-      // Espace disponible à droite (jusqu'au bord ou prochain point)
+      // Espace disponible à droite
       const rightPoints = tl.events
         .filter(e => !e._auto && e.type === 'point' && e.id !== evt.id)
         .map(e => dayToX(evtStartDays(e)))
-        .filter(px => px > x + r + 4)
+        .filter(px => px > x + margin)
         .sort((a, b) => a - b);
-      const nextRightX = rightPoints.length ? rightPoints[0] - 4 : W - 4;
-      const spaceRight = nextRightX - (x + r + 4);
+      const nextRightX = rightPoints.length ? rightPoints[0] - margin : W - 4;
+      const spaceRight = nextRightX - (x + margin);
 
-      // Espace disponible à gauche (depuis le bord gauche ou le point précédent)
+      // Espace disponible à gauche
       const leftPoints = tl.events
         .filter(e => !e._auto && e.type === 'point' && e.id !== evt.id)
         .map(e => dayToX(evtStartDays(e)))
-        .filter(px => px < x - r - 4)
+        .filter(px => px < x - margin)
         .sort((a, b) => b - a);
-      const nextLeftX = leftPoints.length ? leftPoints[0] + 4 : 4;
-      const spaceLeft = (x - r - 4) - nextLeftX;
+      const nextLeftX = leftPoints.length ? leftPoints[0] + margin : 4;
+      const spaceLeft = (x - margin) - nextLeftX;
 
       const lblColor = isFuturePoint
         ? hexToRgba(col, 0.6)
         : (isHov || isSel ? 'white' : 'rgba(255,255,255,0.92)');
-
       ctx.fillStyle = lblColor;
 
-      if (spaceRight >= lblFullW) {
-        // Cas 1 : texte complet à droite
+      if (spaceRight >= lblFullW + 2) {
         ctx.textAlign = 'left';
-        ctx.fillText(lblFull, x + r + 4, ptY + 4);
-      } else if (spaceLeft >= lblFullW) {
-        // Cas 2 : texte complet à gauche
+        ctx.fillText(lblFull, x + margin, ptY + 4);
+      } else if (spaceLeft >= lblFullW + 2) {
         ctx.textAlign = 'right';
-        ctx.fillText(lblFull, x - r - 4, ptY + 4);
-      } else if (spaceRight >= 20) {
-        // Cas 3 : tronqué à droite avec '...'
+        ctx.fillText(lblFull, x - margin, ptY + 4);
+      } else {
         ctx.textAlign = 'left';
-        ctx.fillText(ellipsis(ctx, lblFull, spaceRight), x + r + 4, ptY + 4);
-      } else if (spaceLeft >= 20) {
-        // Cas 4 : tronqué à gauche avec '...'
-        ctx.textAlign = 'right';
-        ctx.fillText(ellipsis(ctx, lblFull, spaceLeft), x - r - 4, ptY + 4);
+        ctx.fillText('…', x + margin, ptY + 4);
       }
-      // Cas 5 : pas assez de place nulle part → pas de label
     }
 
     state.hitBoxes.push({ evt, tl, x1: x-r-4, y1: ptY-r-4, x2: x+r+4, y2: ptY+r+4 });
@@ -5892,13 +5884,13 @@ document.getElementById('volets-container').addEventListener('mouseleave', e => 
   const trigger = document.getElementById('catalogue-trigger');
   if (!trigger.contains(e.relatedTarget)) {
     if (_voletCloseTimer) clearTimeout(_voletCloseTimer);
-    _voletCloseTimer = setTimeout(() => closeAllVolets(), 1500);
+    _voletCloseTimer = setTimeout(() => closeAllVolets(), 400);
   }
 });
 document.getElementById('catalogue-trigger').addEventListener('mouseleave', e => {
   if (!document.getElementById('volets-container').contains(e.relatedTarget)) {
     if (_voletCloseTimer) clearTimeout(_voletCloseTimer);
-    _voletCloseTimer = setTimeout(() => closeAllVolets(), 1500);
+    _voletCloseTimer = setTimeout(() => closeAllVolets(), 400);
   }
 });
 // Annuler la fermeture si la souris revient dans les volets
