@@ -2100,6 +2100,16 @@
           <button id="splash-quit-btn" onclick="window.close()" title="Quitter">Quitter</button>
         </div>
 
+        <!-- Message maintenance (affiché si maintenance=0 et non superuser) -->
+        <div id="splash-maintenance" style="display:none;text-align:center;padding:24px 16px">
+          <div style="font-size:28px;margin-bottom:12px">🔧</div>
+          <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--accent);
+                      letter-spacing:1.5px;margin-bottom:10px">Site sous maintenance</div>
+          <div style="font-size:13px;color:var(--text-mid);line-height:1.7">
+            Merci de revenir un peu plus tard.
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -2158,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.62 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.1 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -5371,168 +5381,239 @@ function buildVolet0() {
 
   if (catalogueData.length === 0) {
     list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:12px">
-      Importez un fichier Excel<br>pour alimenter le catalogue.</div>`;
+      Aucune donnée dans le catalogue.</div>`;
     return;
   }
 
-  const familles = catalogueData.filter(c => c.niveau === 0);
-  const items = familles.length > 0
-    ? familles
-    : catalogueData.filter(c => !c.parentId);
+  // Volet 0 : uniquement les rubriques dont l'id commence par 'famille_'
+  const familles = catalogueData.filter(c => c.id.startsWith('famille_'));
 
-  items.forEach(fam => {
-    const enfants = catalogueData.filter(c => c.parentId === fam.id);
-    const hasChildren = enfants.length > 0;
+  if (familles.length === 0) {
+    list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:12px">
+      Aucune famille trouvée.</div>`;
+    return;
+  }
+
+  familles.forEach(fam => {
     const div = document.createElement('div');
     div.className = 'volet-item';
     div.innerHTML = `
       <div class="volet-dot" style="background:${fam.color || '#8ecae6'}"></div>
       <span class="volet-label">${escHtml(fam.title)}</span>
-      ${hasChildren ? '<span class="volet-arrow">›</span>' : ''}`;
+      <span class="volet-next-btn">▶</span>`;
     div.addEventListener('click', () => {
       document.querySelectorAll('#volet-0-list .volet-item').forEach(el => el.classList.remove('active'));
       div.classList.add('active');
-      // Niveau 0 = grande famille → ouvre toujours un volet (même vide)
-      if (fam.niveau === 0 || hasChildren) openVolet1(fam);
-      else { closeVoletsFrom(1); addFromCatalogue(fam.id); }
+      openVolet1FromFamille(fam);
     });
     list.appendChild(div);
   });
 }
 
-// ── Volet N : fonction générique pour les niveaux 1 à N ───────
-// level = numéro du volet à ouvrir (1, 2, 3...)
-// parent = rubrique parente dont on affiche les enfants
-// parentFamilleId = ID de la famille racine (pour addFromCatalogue)
-function openVoletN(level, parent, parentFamilleId) {
-  closeVoletsFrom(level + 1);
-  document.getElementById(`volet-${level}-icon`).textContent = '';
-  document.getElementById(`volet-${level}-title`).textContent = parent.title;
+// ── Volet 1 : événements d'une famille (rubrique_id = famille.id) ──
+function openVolet1FromFamille(famille) {
+  closeVoletsFrom(2);
+  document.getElementById('volet-1-icon').textContent = '';
+  document.getElementById('volet-1-title').textContent = famille.title;
 
-  const list = document.getElementById(`volet-${level}-list`);
+  const list = document.getElementById('volet-1-list');
   list.innerHTML = '';
-  const activeIds = new Set(state.timelines.filter(t => t.enabled).map(t => t.id));
 
-  const enfants = catalogueData.filter(c => c.parentId === parent.id)
-    .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+  // Récupérer les événements dont rubrique_id = famille.id
+  const evts = (window._evtsByRubrique?.[famille.id] || [])
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
 
-  if (enfants.length === 0) {
+  if (evts.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
-      Aucune rubrique dans cette section.</div>`;
-    document.getElementById(`volet-${level}`).classList.add('open');
+      Aucun événement dans cette famille.</div>`;
+    document.getElementById('volet-1').classList.add('open');
     return;
   }
 
-  enfants.forEach(rub => {
-    const sousRubs = catalogueData.filter(c => c.parentId === rub.id);
-    const hasChildren = sousRubs.length > 0;
-    const already = activeIds.has(rub.id);
-    const accesVal = (rub.acces || 'public').toLowerCase();
+  evts.forEach(evt => {
+    // Un item du volet 1 a un ▶ si des événements ont dep = evt.ref
+    const hasChildren = evt.ref && (window._evtsByDep?.[evt.ref]?.length > 0);
+    const accesVal = (evt.acces || 'public').toLowerCase();
     const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
-    const isLevel1 = level === 1; // volet 1 : pas de bouton ＋ sur la rubrique principale
 
     const div = document.createElement('div');
-    div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
+    div.className = 'volet-item' + (locked ? ' locked' : '');
 
-    // Construction des actions à droite
     let actionsHtml = '';
     if (locked) {
       actionsHtml = '<span class="volet-acces-badge">⭐</span>';
-    } else if (rub.detail === 'oui') {
-      // Mode détail : triangle pour ouvrir le volet liste individuelle
-      actionsHtml = '<span class="volet-next-btn" title="Voir les éléments">▶</span>';
-    } else if (already) {
-      actionsHtml = '<span class="volet-check">✓</span>';
-    } else {
-      // Construire les boutons selon le niveau et la présence d'enfants
-      const btnNext = hasChildren
-        ? `<button class="volet-next-btn" title="Voir les sous-rubriques">▶</button>`
-        : '';
-      const btnAdd = (isLevel1 || level === 0)
-        ? '' // pas de ＋ aux niveaux 0 et 1
-        : `<button class="volet-add-btn" title="Charger cette rubrique et ses enfants">＋</button>`;
-      if (btnNext || btnAdd) {
-        actionsHtml = `<div class="volet-actions">${btnAdd}${btnNext}</div>`;
-      } else if (!isLevel1 && level > 0) {
-        // Niveau 2+ sans enfants → ＋ seul
-        actionsHtml = `<div class="volet-actions"><button class="volet-add-btn" title="Charger cette rubrique">＋</button></div>`;
-      }
+    } else if (hasChildren) {
+      actionsHtml = '<button class="volet-next-btn" title="Voir les sous-rubriques">▶</button>';
     }
 
     div.innerHTML = `
-      <div class="volet-dot" style="background:${rub.color}"></div>
-      <span class="volet-label">${escHtml(rub.title)}</span>
+      <div class="volet-dot" style="background:${evt.color || famille.color}"></div>
+      <span class="volet-label">${escHtml(evt.title)}</span>
       ${actionsHtml}`;
 
     if (locked) {
       div.addEventListener('click', () => openSubscribePopup());
-    } else if (rub.detail === 'oui') {
-      // Clic sur le triangle → volet détail individuel
+    } else {
+      const action = () => {
+        document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
+        div.classList.add('active');
+        if (hasChildren) openVoletByDep(2, evt);
+      };
+      div.addEventListener('click', action);
+      const btn = div.querySelector('.volet-next-btn');
+      if (btn) btn.addEventListener('click', e => { e.stopPropagation(); action(); });
+    }
+    list.appendChild(div);
+  });
+
+  document.getElementById('volet-1').classList.add('open');
+}
+
+// ── Volets 2+ : événements dont dep = ref_parent ──────────────
+function openVoletByDep(level, parentEvt) {
+  closeVoletsFrom(level + 1);
+  document.getElementById(`volet-${level}-icon`).textContent = '';
+  document.getElementById(`volet-${level}-title`).textContent = parentEvt.title;
+
+  const list = document.getElementById(`volet-${level}-list`);
+  list.innerHTML = '';
+
+  // Récupérer les événements dont dep = parentEvt.ref
+  const evts = (window._evtsByDep?.[parentEvt.ref] || [])
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+
+  if (evts.length === 0) {
+    list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
+      Aucun sous-élément.</div>`;
+    document.getElementById(`volet-${level}`).classList.add('open');
+    return;
+  }
+
+  const loadedRefs = new Set(
+    state.timelines.flatMap(t => t.events.map(e => e.ref).filter(Boolean))
+  );
+
+  evts.forEach(evt => {
+    const hasChildren = evt.ref && (window._evtsByDep?.[evt.ref]?.length > 0);
+    const already = loadedRefs.has(evt.ref);
+    const accesVal = (evt.acces || 'public').toLowerCase();
+    const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
+
+    const div = document.createElement('div');
+    div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
+
+    let actionsHtml = '';
+    if (locked) {
+      actionsHtml = '<span class="volet-acces-badge">⭐</span>';
+    } else if (already) {
+      actionsHtml = '<span class="volet-check">✓</span>';
+    } else {
+      const btnAdd = `<button class="volet-add-btn" title="Charger">＋</button>`;
+      const btnNext = hasChildren
+        ? `<button class="volet-next-btn" title="Voir les sous-éléments">▶</button>`
+        : '';
+      actionsHtml = `<div class="volet-actions">${btnAdd}${btnNext}</div>`;
+    }
+
+    div.innerHTML = `
+      <div class="volet-dot" style="background:${evt.color}"></div>
+      <span class="volet-label">${escHtml(evt.title)}</span>
+      ${actionsHtml}`;
+
+    if (locked) {
+      div.addEventListener('click', () => openSubscribePopup());
+    } else if (!already) {
+      // Bouton ＋ → charger récursivement
+      const btnAdd = div.querySelector('.volet-add-btn');
+      if (btnAdd) btnAdd.addEventListener('click', e => {
+        e.stopPropagation();
+        addEvtAndDescendants(evt, parentEvt);
+        div.className = 'volet-item already';
+        div.querySelector('.volet-actions')?.remove();
+        const check = document.createElement('span');
+        check.className = 'volet-check'; check.textContent = '✓';
+        div.appendChild(check);
+      });
+
+      // Bouton ▶ → volet suivant
       const btnNext = div.querySelector('.volet-next-btn');
-      const openDetail = () => {
+      if (btnNext) btnNext.addEventListener('click', e => {
+        e.stopPropagation();
         document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
         div.classList.add('active');
-        openVolet3(rub);
-      };
-      if (btnNext) btnNext.addEventListener('click', e => { e.stopPropagation(); openDetail(); });
-      div.addEventListener('click', openDetail);
-    } else {
-      // Bouton ▶ → ouvrir le volet suivant
-      const btnNext = div.querySelector('.volet-next-btn');
-      if (btnNext) {
-        btnNext.addEventListener('click', e => {
-          e.stopPropagation();
-          document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
-          div.classList.add('active');
-          if (level + 1 <= MAX_VOLETS) openVoletN(level + 1, rub, parentFamilleId || parent.id);
-        });
-      }
+        if (level + 1 <= MAX_VOLETS) openVoletByDep(level + 1, evt);
+      });
 
-      // Bouton ＋ → charger la rubrique et ses enfants
-      const btnAdd = div.querySelector('.volet-add-btn');
-      if (btnAdd) {
-        btnAdd.addEventListener('click', e => {
-          e.stopPropagation();
-          addFromCatalogue(rub.id, parentFamilleId || parent.id);
+      // Clic sur div sans enfants → charger directement
+      if (!hasChildren) {
+        div.addEventListener('click', e => {
+          if (e.target.closest('button')) return;
+          addEvtAndDescendants(evt, parentEvt);
           div.className = 'volet-item already';
           div.querySelector('.volet-actions')?.remove();
           const check = document.createElement('span');
           check.className = 'volet-check'; check.textContent = '✓';
           div.appendChild(check);
         });
-      }
-
-      // Clic sur le div (hors boutons) → si pas d'enfants et niveau > 1, charger directement
-      if (!hasChildren && level > 1 && !already) {
-        div.addEventListener('click', e => {
-          if (e.target.closest('button')) return;
-          addFromCatalogue(rub.id, parentFamilleId || parent.id);
-          div.className = 'volet-item already';
-          div.querySelector('.volet-actions')?.remove();
-          const check = document.createElement('span');
-          check.className = 'volet-check'; check.textContent = '✓';
-          div.appendChild(check);
-        });
-      } else if (hasChildren || isLevel1) {
-        // Clic sur le div → ouvrir le volet suivant
+      } else {
         div.addEventListener('click', e => {
           if (e.target.closest('button')) return;
           document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
           div.classList.add('active');
-          if (level + 1 <= MAX_VOLETS) openVoletN(level + 1, rub, parentFamilleId || parent.id);
+          if (level + 1 <= MAX_VOLETS) openVoletByDep(level + 1, evt);
         });
       }
     }
-
     list.appendChild(div);
   });
 
   document.getElementById(`volet-${level}`).classList.add('open');
 }
 
+// ── Charger un événement + tous ses descendants récursivement ──
+function addEvtAndDescendants(evt, parentEvt) {
+  // Trouver ou créer la timeline pour cet événement
+  const tlId = parentEvt.rubrique_id + '__' + (parentEvt.ref || parentEvt.title);
+  let tl = state.timelines.find(t => t.id === tlId);
+  if (!tl) {
+    tl = {
+      id:      tlId,
+      title:   parentEvt.title,
+      color:   parentEvt.color,
+      enabled: true,
+      events:  []
+    };
+    state.timelines.push(tl);
+  }
+
+  // Ajouter l'événement s'il n'est pas déjà présent
+  if (!tl.events.find(e => e.id === evt.id)) {
+    tl.events.push({ ...evt });
+  }
+
+  // Ajouter récursivement tous les descendants
+  if (evt.ref) {
+    const enfants = window._evtsByDep?.[evt.ref] || [];
+    enfants.forEach(child => addEvtAndDescendants(child, parentEvt));
+  }
+
+  buildFA();
+  buildCatalogueList('');
+  Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
+  buildRefMap();
+  render();
+  autoSaveState();
+}
+
+// ── Volet N : fonction générique (alias pour compatibilité) ───
+function openVoletN(level, parent, parentFamilleId) {
+  if (level === 1) { openVolet1FromFamille(parent); return; }
+  openVoletByDep(level, parent);
+}
+
 // Alias de compatibilité
-function openVolet1(famille) { openVoletN(1, famille, famille.id); }
-function openVolet2(rubrique) { openVoletN(2, rubrique); }
+function openVolet1(famille) { openVolet1FromFamille(famille); }
+function openVolet2(rubrique) { openVoletByDep(2, rubrique); }
 
 // ── Volet 3 : éléments individuels (mode detail = 'oui') ──────
 function openVolet3(rubrique) {
@@ -6556,6 +6637,9 @@ async function loadAppConfig() {
     // Appliquer les paramètres admin
     if (appConfig.admin_username)          ADMIN_USERNAME          = appConfig.admin_username;
 
+    // Appliquer le mode maintenance
+    applyMaintenanceMode();
+
     console.log('[config] Chargée :', Object.keys(appConfig).length, 'paramètres');
   } catch(e) {
     console.warn('[config] Échec chargement, valeurs par défaut utilisées');
@@ -6668,7 +6752,7 @@ function fmtTupleForDb(tuple) {
 async function dbPullCatalogue() {
   dbSetStatus('Chargement depuis Supabase…');
   try {
-    // 1. Charger les rubriques
+    // 1. Charger les rubriques (familles uniquement dans catalogueData)
     const rubs = await sbFetch(sbUrl('rubriques', '?select=*&order=position.asc'));
     if (!rubs || rubs.length === 0) {
       dbSetStatus('❌ Aucune rubrique dans Supabase.', 'err'); return;
@@ -6677,7 +6761,7 @@ async function dbPullCatalogue() {
     // 2. Charger tous les événements
     const evts = await sbFetch(sbUrl('evenements', '?select=*&order=id.asc'));
 
-    // 3. Reconstruire catalogueData
+    // 3. Reconstruire catalogueData (familles + rubriques pour compatibilité)
     catalogueData = rubs.map(r => ({
       id:          r.id,
       title:       r.titre,
@@ -6691,63 +6775,80 @@ async function dbPullCatalogue() {
       _events:     []
     }));
 
-    // 4. Attacher les événements à leurs rubriques
+    // 4. Parser et indexer les événements
+    // Index par rubrique_id (pour volet 1)
+    // Index par dep (pour volets 2+)
+    window._evtsByRubrique = {};  // rubrique_id → [evts]
+    window._evtsByDep      = {};  // dep → [evts]
+    window._evtsAllParsed  = [];  // tous les événements parsés
+
     const catMap = {};
     catalogueData.forEach(c => { catMap[c.id] = c; });
 
     (evts || []).forEach(e => {
-      const cat = catMap[e.rubrique_id];
-      if (!cat) return;
       const startTuple = parseInputDate(e.date_debut);
-      if (!startTuple) return;
 
-      if (e.type === 'range') {
-        const endTuple = e.date_fin ? parseInputDate(e.date_fin) : null;
-        cat._events.push({
-          id:         'sb_' + e.id,
-          type:       'range',
-          start:      startTuple,
-          end:        endTuple,
-          title:      e.titre,
-          color:      e.couleur || cat.color,
-          comment:    e.commentaire || '',
-          photo:      e.photo || null,
-          zone:       e.zone || null,
-          ref:        e.ref  || null,
-          dep:        e.dep  || null,
-          importance: e.importance != null ? e.importance : 5,
-          wikiTitle:  e.wiki_title || null,
-          wikiSummary: e.wiki_summary || null,
-          wikiImage:  e.wiki_image || null,
-          wikiLastModified: e.wiki_last_modified || null
-        });
-      } else {
-        cat._events.push({
-          id:         'sb_' + e.id,
-          type:       'point',
-          date:       startTuple,
-          title:      e.titre,
-          color:      e.couleur || cat.color,
-          symbol:     e.symbole || 'circle',
-          symbolSize: e.taille_symbole || 6,
-          comment:    e.commentaire || '',
-          photo:      e.photo || null,
-          zone:       e.zone || null,
-          ref:        e.ref  || null,
-          dep:        e.dep  || null,
-          importance: e.importance != null ? e.importance : 5,
-          wikiTitle:  e.wiki_title || null,
-          wikiSummary: e.wiki_summary || null,
-          wikiImage:  e.wiki_image || null,
-          wikiLastModified: e.wiki_last_modified || null
-        });
+      const parsed = e.type === 'range' ? {
+        id:         'sb_' + e.id,
+        type:       'range',
+        start:      startTuple,
+        end:        e.date_fin ? parseInputDate(e.date_fin) : null,
+        title:      e.titre,
+        color:      e.couleur || (catMap[e.rubrique_id]?.color) || '#8ecae6',
+        comment:    e.commentaire || '',
+        photo:      e.photo || null,
+        zone:       e.zone || null,
+        ref:        e.ref  || null,
+        dep:        e.dep  || null,
+        importance: e.importance != null ? e.importance : 5,
+        rubrique_id: e.rubrique_id,
+        wikiTitle:       e.wiki_title || null,
+        wikiSummary:     e.wiki_summary || null,
+        wikiImage:       e.wiki_image || null,
+        wikiLastModified: e.wiki_last_modified || null
+      } : {
+        id:         'sb_' + e.id,
+        type:       'point',
+        date:       startTuple,
+        title:      e.titre,
+        color:      e.couleur || (catMap[e.rubrique_id]?.color) || '#8ecae6',
+        symbol:     e.symbole || 'circle',
+        symbolSize: e.taille_symbole || 6,
+        comment:    e.commentaire || '',
+        photo:      e.photo || null,
+        zone:       e.zone || null,
+        ref:        e.ref  || null,
+        dep:        e.dep  || null,
+        importance: e.importance != null ? e.importance : 5,
+        rubrique_id: e.rubrique_id,
+        wikiTitle:       e.wiki_title || null,
+        wikiSummary:     e.wiki_summary || null,
+        wikiImage:       e.wiki_image || null,
+        wikiLastModified: e.wiki_last_modified || null
+      };
+
+      window._evtsAllParsed.push(parsed);
+
+      // Index par rubrique_id
+      if (e.rubrique_id) {
+        if (!window._evtsByRubrique[e.rubrique_id]) window._evtsByRubrique[e.rubrique_id] = [];
+        window._evtsByRubrique[e.rubrique_id].push(parsed);
       }
+
+      // Index par dep
+      if (e.dep) {
+        if (!window._evtsByDep[e.dep]) window._evtsByDep[e.dep] = [];
+        window._evtsByDep[e.dep].push(parsed);
+      }
+
+      // Compatibilité : attacher aussi aux rubriques pour l'ancien système
+      const cat = catMap[e.rubrique_id];
+      if (cat && startTuple) cat._events.push(parsed);
     });
 
     // 5. Vider la carte et reconstruire le catalogue
     state.timelines = [];
     state.selected  = null;
-    // Vider le cache d'opacité LOD pour que les règles s'appliquent correctement
     Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
     clearFCDetail();
     buildCatalogueList('');
@@ -7801,6 +7902,21 @@ function renderWikiBlock(w) {
       'Mis à jour sur Wikipedia le ' + d.toLocaleDateString('fr-FR');
   }
 }
+// ── Mode maintenance ──────────────────────────────────────────
+function applyMaintenanceMode() {
+  const maintenance = appConfig.maintenance === '0';
+  if (!maintenance) return; // site ouvert → rien à faire
+
+  // Superuser → toujours accès complet
+  if (currentProfil && currentProfil.statut === 'superuser') return;
+
+  // Maintenance active → masquer le formulaire, afficher le message
+  const form = document.getElementById('splash-form');
+  const msg  = document.getElementById('splash-maintenance');
+  if (form) form.style.display = 'none';
+  if (msg)  msg.style.display  = 'block';
+}
+
 async function logConnexion() {
   if (!currentUser) return;
   let ip = '—';
