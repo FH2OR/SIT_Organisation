@@ -2142,7 +2142,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.59 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.60 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -3387,8 +3387,8 @@ function drawTimeHeader(nowDay, nowX) {
   const ppy = state.scale * 365.2425;
 
   // ── ROW A – décennies / siècles ────────────────────────────
-  const stepsA = [1,2,5,10,20,25,50,100,200,500,1000];
-  let stepA = stepsA.find(s => s * ppy >= 50) || 1000;
+  const stepsA = [1,2,5,10,20,25,50,100,200,500,1000,2000,5000,10000,50000,100000,500000,1000000];
+  let stepA = stepsA.find(s => s * ppy >= 50) || 1000000;
 
   const y0A = Math.floor(yL / stepA) * stepA - stepA;
   const y1A = Math.ceil(yR / stepA) * stepA + stepA;
@@ -3608,7 +3608,17 @@ function drawTimeHeader(nowDay, nowX) {
 
 function formatYear(y) {
   if (y === 0) return '0';
-  return y < 0 ? `${Math.abs(y)} av.J.-C.` : String(y);
+  const abs = Math.abs(y);
+  const era = y < 0 ? ' av.J.-C.' : '';
+  if (abs >= 1000000) {
+    const m = abs / 1000000;
+    return `${m % 1 === 0 ? m : m.toFixed(1)} M${era}`;
+  }
+  if (abs >= 10000) {
+    const k = abs / 1000;
+    return `${k % 1 === 0 ? k : k.toFixed(0)} ka${era}`;
+  }
+  return y < 0 ? `${abs} av.J.-C.` : String(y);
 }
 
 // Convertit un nombre de jours (flottant) en date lisible pour le curseur
@@ -3650,7 +3660,7 @@ function daysInMonth(y, m) {
 }
 
 function niceStep(s) {
-  for (const n of [1,2,5,10,20,25,50,100,200,250,500,1000,2000,5000]) if (s <= n) return n;
+  for (const n of [1,2,5,10,20,25,50,100,200,250,500,1000,2000,5000,10000,50000,100000,500000,1000000]) if (s <= n) return n;
   return s;
 }
 
@@ -4352,7 +4362,7 @@ canvas.addEventListener('wheel', e => {
   const mx = e.offsetX;
   const mDay = xToDay(mx);
   const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
-  const newScale = Math.max(0.00005, Math.min(state.scale * factor, 500));
+  const newScale = Math.max(0.000001, Math.min(state.scale * factor, 500));
   state.centerDay = mDay - (mx - W/2) / newScale;
   state.scale = newScale;
   // Repasser en mode auto LOD géométrique au zoom molette
@@ -5753,7 +5763,7 @@ function zoomToAll() {
   const span      = maxDay - minDay || 365;
   const margin    = Math.max(span * 0.10, 365);
   const totalSpan = span + margin * 2;
-  const newScale  = Math.max(0.00005, Math.min(W / totalSpan, 500));
+  const newScale  = Math.max(0.000001, Math.min(W / totalSpan, 500));
   const newCenter = (minDay + maxDay) / 2;
   animateTo(newCenter, newScale);
 }
@@ -5781,7 +5791,7 @@ function zoomToTimeline(id) {
   const span = maxDay - minDay;
   const margin = span * 0.08 || 365;
   const totalSpan = span + margin * 2;
-  const newScale = Math.max(0.00005, Math.min(W / totalSpan, 500));
+  const newScale = Math.max(0.000001, Math.min(W / totalSpan, 500));
   const newCenter = minDay - margin + totalSpan / 2;
   animateTo(newCenter, newScale);
 }
