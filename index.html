@@ -2158,7 +2158,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.61 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.62 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -5448,11 +5448,14 @@ function openVoletN(level, parent, parentFamilleId) {
       const btnNext = hasChildren
         ? `<button class="volet-next-btn" title="Voir les sous-rubriques">▶</button>`
         : '';
-      const btnAdd = isLevel1
-        ? '' // pas de ＋ au niveau 1
+      const btnAdd = (isLevel1 || level === 0)
+        ? '' // pas de ＋ aux niveaux 0 et 1
         : `<button class="volet-add-btn" title="Charger cette rubrique et ses enfants">＋</button>`;
       if (btnNext || btnAdd) {
         actionsHtml = `<div class="volet-actions">${btnAdd}${btnNext}</div>`;
+      } else if (!isLevel1 && level > 0) {
+        // Niveau 2+ sans enfants → ＋ seul
+        actionsHtml = `<div class="volet-actions"><button class="volet-add-btn" title="Charger cette rubrique">＋</button></div>`;
       }
     }
 
@@ -5500,7 +5503,7 @@ function openVoletN(level, parent, parentFamilleId) {
       }
 
       // Clic sur le div (hors boutons) → si pas d'enfants et niveau > 1, charger directement
-      if (!hasChildren && !isLevel1 && !already) {
+      if (!hasChildren && level > 1 && !already) {
         div.addEventListener('click', e => {
           if (e.target.closest('button')) return;
           addFromCatalogue(rub.id, parentFamilleId || parent.id);
@@ -5510,8 +5513,8 @@ function openVoletN(level, parent, parentFamilleId) {
           check.className = 'volet-check'; check.textContent = '✓';
           div.appendChild(check);
         });
-      } else if (hasChildren) {
-        // Clic sur le div → ouvrir le volet suivant (comme btnNext)
+      } else if (hasChildren || isLevel1) {
+        // Clic sur le div → ouvrir le volet suivant
         div.addEventListener('click', e => {
           if (e.target.closest('button')) return;
           document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
