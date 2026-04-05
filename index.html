@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.10 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.13 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -2583,7 +2583,7 @@
       </div>
       <div class="fc-detail" id="fc-detail">
         <div class="fc-color-row">
-          <div class="fc-color-dot" id="fc-color-dot"></div>
+          <div class="fc-color-dot" id="fc-color-dot" title="Changer la couleur" onclick="openColorPickerDirect()" style="cursor:pointer"></div>
           <div class="fc-title" id="fc-title"></div>
         </div>
         <div class="fc-date" id="fc-date"></div>
@@ -6124,6 +6124,16 @@ function clearFCDetail() {
   }, 310);
 }
 
+function openColorPickerDirect() {
+  if (!editOpen) toggleEdit();
+  // Ouvrir le color picker directement
+  setTimeout(() => {
+    const panel = document.getElementById('color-picker-panel');
+    if (!panel.classList.contains('open')) toggleColorPicker();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
 function toggleEdit() {
   editOpen = !editOpen;
   const form = document.getElementById('fc-edit-form');
@@ -6248,13 +6258,19 @@ function saveEdit() {
   // Recalculer le range englobant si sous-rubrique
   if (fcTl && fcTl.parentId) syncParentRange(fcTl.parentId);
 
-  // Sauvegarder ref/dep dans Supabase si l'événement vient de la base
+  // Sauvegarder ref/dep dans Supabase, et couleur dans user_preferences
   if (fcEvt.id && String(fcEvt.id).startsWith('sb_')) {
     const evtId = String(fcEvt.id).replace('sb_', '');
+    // ref/dep → evenements (global)
     sbFetch(sbUrl('evenements', `?id=eq.${evtId}`), {
       method: 'PATCH',
-      body: JSON.stringify({ ref: fcEvt.ref || null, dep: fcEvt.dep || null })
+      body: JSON.stringify({
+        ref: fcEvt.ref || null,
+        dep: fcEvt.dep || null
+      })
     }).catch(err => console.warn('[saveEdit ref/dep]', err));
+    // couleur → user_preferences (personnel)
+    saveUserColorPreference(evtId, fcEvt.color);
   }
 
   toggleEdit();
@@ -6945,6 +6961,10 @@ async function dbPullCatalogue() {
     state.selected  = null;
     Object.keys(lodOpacity).forEach(k => delete lodOpacity[k]);
     clearFCDetail();
+
+    // 6. Appliquer les préférences de couleur de l'utilisateur connecté
+    if (currentUser) await applyUserColorPreferences();
+
     buildCatalogueList('');
     buildFA();
     buildRefMap();
@@ -6958,7 +6978,44 @@ async function dbPullCatalogue() {
   }
 }
 
-// ── Sauvegarder l'état de la carte (vue + rubriques actives) ──
+// ── Préférences de couleur par utilisateur ────────────────────
+async function applyUserColorPreferences() {
+  if (!currentUser) return;
+  try {
+    const prefs = await sbFetch(sbUrl('user_preferences',
+      `?user_id=eq.${currentUser.id}&select=evt_id,couleur`));
+    if (!prefs || prefs.length === 0) return;
+    const prefMap = {};
+    prefs.forEach(p => { prefMap[p.evt_id] = p.couleur; });
+    // Appliquer sur tous les événements parsés
+    window._evtsAllParsed.forEach(evt => {
+      const rawId = String(evt.id).replace('sb_', '');
+      if (prefMap[rawId]) evt.color = prefMap[rawId];
+    });
+  } catch(e) {
+    console.warn('[applyUserColorPreferences]', e);
+  }
+}
+
+// ── Sauvegarder la couleur dans user_preferences ──────────────
+async function saveUserColorPreference(evtId, color) {
+  if (!currentUser) return;
+  try {
+    await sbFetch(sbUrl('user_preferences'), {
+      method: 'POST',
+      headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        evt_id:  parseInt(evtId),
+        couleur: color
+      })
+    });
+  } catch(e) {
+    console.warn('[saveUserColorPreference]', e);
+  }
+}
+
+// ── Sauvegarder la vue (vue + rubriques actives) ──
 async function dbSave() {
   if (!currentUser) { dbSetStatus('❌ Connexion requise pour sauvegarder.', 'err'); return; }
   const nom = document.getElementById('db-save-name').value.trim() || 'Ma vue';
