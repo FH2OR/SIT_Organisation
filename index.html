@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.13 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.14 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -9155,6 +9155,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') splashLogin(); });
   });
   document.getElementById('splash-email')?.focus();
+});
+
+// ── Sauvegarde au départ (fermeture onglet / navigation) ─────
+function saveStateSync() {
+  if (!currentUser || state.timelines.length === 0) return;
+  // Annuler le debounce en cours et sauvegarder immédiatement
+  clearTimeout(_autoSaveTimer);
+  const donnees = JSON.stringify({
+    version:         1,
+    savedAt:         new Date().toISOString(),
+    view:            { centerDay: state.centerDay, scale: state.scale },
+    activeTimelines: state.timelines.map(t => t.id)
+  });
+  // Utiliser sendBeacon pour garantir l'envoi même lors de la fermeture
+  const url = `${SUPABASE_URL}/rest/v1/frises_saves`;
+  const blob = new Blob([JSON.stringify({
+    nom:     '__auto__',
+    donnees: donnees,
+    user_id: currentUser.id
+  })], { type: 'application/json' });
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(url, blob);
+  }
+}
+
+window.addEventListener('beforeunload', saveStateSync);
+window.addEventListener('pagehide', saveStateSync);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveStateSync();
 });
 
 // ── Animation photos défilantes ──────────────────────────────
