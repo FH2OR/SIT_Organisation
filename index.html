@@ -1505,6 +1505,22 @@
   .volet-arrow {
     font-size: 10px; color: var(--text-dim); flex-shrink: 0;
   }
+  .volet-next-btn {
+    flex-shrink: 0; font-size: 9px;
+    width: 22px; height: 22px; border-radius: 4px;
+    background: rgba(142,202,230,0.1);
+    border: 1px solid rgba(142,202,230,0.3);
+    color: var(--accent2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .volet-next-btn:hover {
+    background: rgba(142,202,230,0.25);
+    border-color: var(--accent2);
+  }
+  .volet-actions {
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto;
+  }
   .volet-add-btn {
     flex-shrink: 0; font-size: 13px; font-weight: 700;
     width: 22px; height: 22px; border-radius: 4px;
@@ -2142,7 +2158,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.9.60 — Beta
+        <span style="font-size:13px">⚙</span> v0.9.61 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -2436,7 +2452,7 @@
     <div class="volet-list" id="volet-1-list"></div>
   </div>
 
-  <!-- Volet 2 : sous-rubriques -->
+  <!-- Volets 2-9 : générés dynamiquement -->
   <div class="volet" id="volet-2">
     <div class="volet-header">
       <span class="volet-icon" id="volet-2-icon"></span>
@@ -2445,21 +2461,67 @@
     </div>
     <div class="volet-list" id="volet-2-list"></div>
   </div>
-
-  <!-- Volet 3 : éléments individuels (mode détail) -->
   <div class="volet" id="volet-3">
     <div class="volet-header">
       <span class="volet-icon" id="volet-3-icon"></span>
       <span class="volet-title" id="volet-3-title">—</span>
       <button class="volet-close" onclick="closeVoletsFrom(3)" title="Fermer">✕</button>
     </div>
-    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:block">
+    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:block" id="volet-3-search-wrap">
       <input type="text" id="volet-3-search" placeholder="🔍 Rechercher… (3 car. min)"
         style="width:100%;padding:5px 8px;background:var(--bg);border:1px solid var(--border);
                border-radius:4px;color:var(--text);font-size:12px;
                font-family:'Source Sans 3',sans-serif;outline:none;box-sizing:border-box">
     </div>
     <div class="volet-list" id="volet-3-list"></div>
+  </div>
+  <div class="volet" id="volet-4">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-4-icon"></span>
+      <span class="volet-title" id="volet-4-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(4)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-4-list"></div>
+  </div>
+  <div class="volet" id="volet-5">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-5-icon"></span>
+      <span class="volet-title" id="volet-5-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(5)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-5-list"></div>
+  </div>
+  <div class="volet" id="volet-6">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-6-icon"></span>
+      <span class="volet-title" id="volet-6-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(6)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-6-list"></div>
+  </div>
+  <div class="volet" id="volet-7">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-7-icon"></span>
+      <span class="volet-title" id="volet-7-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(7)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-7-list"></div>
+  </div>
+  <div class="volet" id="volet-8">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-8-icon"></span>
+      <span class="volet-title" id="volet-8-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(8)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-8-list"></div>
+  </div>
+  <div class="volet" id="volet-9">
+    <div class="volet-header">
+      <span class="volet-icon" id="volet-9-icon"></span>
+      <span class="volet-title" id="volet-9-title">—</span>
+      <button class="volet-close" onclick="closeVoletsFrom(9)" title="Fermer">✕</button>
+    </div>
+    <div class="volet-list" id="volet-9-list"></div>
   </div>
 
 </div>
@@ -5242,14 +5304,13 @@ let catalogueData = []; // [{ id, title, color, parentId?, defaultType? }, …]
 let _voletCloseTimer = null;
 
 function openCatalogue() {
-  // Annuler toute fermeture en cours
   if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
-  // Retirer les classes closing si on rouvre
-  ['volet-0','volet-1','volet-2','volet-3'].forEach(id => {
-    document.getElementById(id).classList.remove('closing');
-  });
+  for (let i = 0; i <= MAX_VOLETS; i++) {
+    const v = document.getElementById(`volet-${i}`);
+    if (v) v.classList.remove('closing');
+  }
   const vc = document.getElementById('volets-container');
-  vc.style.pointerEvents = ''; // remettre le CSS en charge
+  vc.style.pointerEvents = '';
   vc.classList.add('open');
   document.getElementById('catalogue-trigger').classList.add('open');
   document.getElementById('volet-0').classList.add('open');
@@ -5260,28 +5321,27 @@ function closeCatalogue() {
   closeAllVolets();
 }
 
+const MAX_VOLETS = 9;
+
 function closeAllVolets() {
   if (_voletCloseTimer) { clearTimeout(_voletCloseTimer); _voletCloseTimer = null; }
   document.getElementById('catalogue-trigger').classList.remove('open');
-
-  // Désactiver immédiatement les pointer-events pour ne pas bloquer l'interface
   document.getElementById('volets-container').style.pointerEvents = 'none';
 
-  // Fermeture en cascade droite → gauche
-  const ordre = ['volet-3', 'volet-2', 'volet-1', 'volet-0'];
   let delai = 0;
-  ordre.forEach(id => {
-    const v = document.getElementById(id);
-    if (v.classList.contains('open')) {
-      setTimeout(() => v.classList.add('closing'), delai);
+  for (let i = MAX_VOLETS; i >= 0; i--) {
+    const v = document.getElementById(`volet-${i}`);
+    if (v && v.classList.contains('open')) {
+      setTimeout(((el) => () => el.classList.add('closing'))(v), delai);
       delai += 200;
     }
-  });
+  }
 
   _voletCloseTimer = setTimeout(() => {
-    ['volet-0','volet-1','volet-2','volet-3'].forEach(id => {
-      document.getElementById(id).classList.remove('open', 'active', 'closing');
-    });
+    for (let i = 0; i <= MAX_VOLETS; i++) {
+      const v = document.getElementById(`volet-${i}`);
+      if (v) v.classList.remove('open', 'active', 'closing');
+    }
     const vc = document.getElementById('volets-container');
     vc.classList.remove('open');
     vc.style.pointerEvents = '';
@@ -5291,20 +5351,12 @@ function closeAllVolets() {
 }
 
 function closeVoletsFrom(level) {
-  for (let i = level; i <= 3; i++) {
+  for (let i = level; i <= MAX_VOLETS; i++) {
     const v = document.getElementById(`volet-${i}`);
-    v.classList.remove('open', 'active', 'closing');
+    if (v) v.classList.remove('open', 'active', 'closing');
   }
-  if (level === 1) {
-    document.querySelectorAll('#volet-0-list .volet-item.active')
-      .forEach(el => el.classList.remove('active'));
-  }
-  if (level === 2) {
-    document.querySelectorAll('#volet-1-list .volet-item.active')
-      .forEach(el => el.classList.remove('active'));
-  }
-  if (level === 3) {
-    document.querySelectorAll('#volet-2-list .volet-item.active')
+  if (level > 0) {
+    document.querySelectorAll(`#volet-${level - 1}-list .volet-item.active`)
       .forEach(el => el.classList.remove('active'));
   }
   if (level === 0) closeAllVolets();
@@ -5348,23 +5400,26 @@ function buildVolet0() {
   });
 }
 
-// ── Volet 1 : rubriques d'une famille ────────────────────────
-function openVolet1(famille) {
-  closeVoletsFrom(2);
-  document.getElementById('volet-1-icon').textContent = '';
-  document.getElementById('volet-1-title').textContent = famille.title;
+// ── Volet N : fonction générique pour les niveaux 1 à N ───────
+// level = numéro du volet à ouvrir (1, 2, 3...)
+// parent = rubrique parente dont on affiche les enfants
+// parentFamilleId = ID de la famille racine (pour addFromCatalogue)
+function openVoletN(level, parent, parentFamilleId) {
+  closeVoletsFrom(level + 1);
+  document.getElementById(`volet-${level}-icon`).textContent = '';
+  document.getElementById(`volet-${level}-title`).textContent = parent.title;
 
-  const list = document.getElementById('volet-1-list');
+  const list = document.getElementById(`volet-${level}-list`);
   list.innerHTML = '';
   const activeIds = new Set(state.timelines.filter(t => t.enabled).map(t => t.id));
 
-  const enfants = catalogueData.filter(c => c.parentId === famille.id)
+  const enfants = catalogueData.filter(c => c.parentId === parent.id)
     .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
 
   if (enfants.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
-      Aucune rubrique<br>dans cette famille pour l'instant.</div>`;
-    document.getElementById('volet-1').classList.add('open');
+      Aucune rubrique dans cette section.</div>`;
+    document.getElementById(`volet-${level}`).classList.add('open');
     return;
   }
 
@@ -5374,99 +5429,107 @@ function openVolet1(famille) {
     const already = activeIds.has(rub.id);
     const accesVal = (rub.acces || 'public').toLowerCase();
     const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
+    const isLevel1 = level === 1; // volet 1 : pas de bouton ＋ sur la rubrique principale
 
     const div = document.createElement('div');
     div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
+
+    // Construction des actions à droite
+    let actionsHtml = '';
+    if (locked) {
+      actionsHtml = '<span class="volet-acces-badge">⭐</span>';
+    } else if (rub.detail === 'oui') {
+      // Mode détail : triangle pour ouvrir le volet liste individuelle
+      actionsHtml = '<span class="volet-next-btn" title="Voir les éléments">▶</span>';
+    } else if (already) {
+      actionsHtml = '<span class="volet-check">✓</span>';
+    } else {
+      // Construire les boutons selon le niveau et la présence d'enfants
+      const btnNext = hasChildren
+        ? `<button class="volet-next-btn" title="Voir les sous-rubriques">▶</button>`
+        : '';
+      const btnAdd = isLevel1
+        ? '' // pas de ＋ au niveau 1
+        : `<button class="volet-add-btn" title="Charger cette rubrique et ses enfants">＋</button>`;
+      if (btnNext || btnAdd) {
+        actionsHtml = `<div class="volet-actions">${btnAdd}${btnNext}</div>`;
+      }
+    }
 
     div.innerHTML = `
       <div class="volet-dot" style="background:${rub.color}"></div>
       <span class="volet-label">${escHtml(rub.title)}</span>
-      ${locked ? '<span class="volet-acces-badge">⭐</span>' : ''}
-      ${(hasChildren || rub.detail === 'oui')
-        ? '<span class="volet-arrow">›</span>'
-        : already
-          ? '<span class="volet-check">✓</span>'
-          : locked ? '' : `<button class="volet-add-btn" title="Ajouter à la frise">＋</button>`}`;
+      ${actionsHtml}`;
 
     if (locked) {
       div.addEventListener('click', () => openSubscribePopup());
     } else if (rub.detail === 'oui') {
-      div.addEventListener('click', () => {
-        document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
+      // Clic sur le triangle → volet détail individuel
+      const btnNext = div.querySelector('.volet-next-btn');
+      const openDetail = () => {
+        document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
         div.classList.add('active');
         openVolet3(rub);
-      });
-    } else if (hasChildren) {
-      div.addEventListener('click', () => {
-        document.querySelectorAll('#volet-1-list .volet-item').forEach(el => el.classList.remove('active'));
-        div.classList.add('active');
-        openVolet2(rub);
-      });
-    } else if (!already) {
-      const btn = div.querySelector('.volet-add-btn');
-      if (btn) btn.addEventListener('click', e => {
-        e.stopPropagation();
-        addFromCatalogue(rub.id, famille.id);
-        div.className = 'volet-item already';
-        div.querySelector('.volet-add-btn')?.remove();
-        const check = document.createElement('span');
-        check.className = 'volet-check'; check.textContent = '✓';
-        div.appendChild(check);
-      });
+      };
+      if (btnNext) btnNext.addEventListener('click', e => { e.stopPropagation(); openDetail(); });
+      div.addEventListener('click', openDetail);
+    } else {
+      // Bouton ▶ → ouvrir le volet suivant
+      const btnNext = div.querySelector('.volet-next-btn');
+      if (btnNext) {
+        btnNext.addEventListener('click', e => {
+          e.stopPropagation();
+          document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
+          div.classList.add('active');
+          if (level + 1 <= MAX_VOLETS) openVoletN(level + 1, rub, parentFamilleId || parent.id);
+        });
+      }
+
+      // Bouton ＋ → charger la rubrique et ses enfants
+      const btnAdd = div.querySelector('.volet-add-btn');
+      if (btnAdd) {
+        btnAdd.addEventListener('click', e => {
+          e.stopPropagation();
+          addFromCatalogue(rub.id, parentFamilleId || parent.id);
+          div.className = 'volet-item already';
+          div.querySelector('.volet-actions')?.remove();
+          const check = document.createElement('span');
+          check.className = 'volet-check'; check.textContent = '✓';
+          div.appendChild(check);
+        });
+      }
+
+      // Clic sur le div (hors boutons) → si pas d'enfants et niveau > 1, charger directement
+      if (!hasChildren && !isLevel1 && !already) {
+        div.addEventListener('click', e => {
+          if (e.target.closest('button')) return;
+          addFromCatalogue(rub.id, parentFamilleId || parent.id);
+          div.className = 'volet-item already';
+          div.querySelector('.volet-actions')?.remove();
+          const check = document.createElement('span');
+          check.className = 'volet-check'; check.textContent = '✓';
+          div.appendChild(check);
+        });
+      } else if (hasChildren) {
+        // Clic sur le div → ouvrir le volet suivant (comme btnNext)
+        div.addEventListener('click', e => {
+          if (e.target.closest('button')) return;
+          document.querySelectorAll(`#volet-${level}-list .volet-item`).forEach(el => el.classList.remove('active'));
+          div.classList.add('active');
+          if (level + 1 <= MAX_VOLETS) openVoletN(level + 1, rub, parentFamilleId || parent.id);
+        });
+      }
     }
+
     list.appendChild(div);
   });
 
-  document.getElementById('volet-1').classList.add('open');
+  document.getElementById(`volet-${level}`).classList.add('open');
 }
 
-// ── Volet 2 : sous-rubriques ──────────────────────────────────
-function openVolet2(rubrique) {
-  document.getElementById('volet-2-icon').textContent = '';
-  document.getElementById('volet-2-title').textContent = rubrique.title;
-
-  const list = document.getElementById('volet-2-list');
-  list.innerHTML = '';
-  const activeIds = new Set(state.timelines.filter(t => t.enabled).map(t => t.id));
-
-  const sousRubs = catalogueData.filter(c => c.parentId === rubrique.id)
-    .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
-
-  sousRubs.forEach(sub => {
-    const already = activeIds.has(sub.id);
-    const accesVal = (sub.acces || 'public').toLowerCase();
-    const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
-    const typeIcon = sub.defaultType === 'range' ? '▬' : '◉';
-
-    const div = document.createElement('div');
-    div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
-    div.innerHTML = `
-      <div class="volet-dot" style="background:${sub.color}"></div>
-      <span class="volet-label">${typeIcon} ${escHtml(sub.title)}</span>
-      ${locked ? '<span class="volet-acces-badge">⭐</span>' : ''}
-      ${already
-        ? '<span class="volet-check">✓</span>'
-        : locked ? '' : `<button class="volet-add-btn" title="Ajouter à la frise">＋</button>`}`;
-
-    if (locked) {
-      div.addEventListener('click', () => openSubscribePopup());
-    } else if (!already) {
-      const btn = div.querySelector('.volet-add-btn');
-      if (btn) btn.addEventListener('click', e => {
-        e.stopPropagation();
-        addFromCatalogue(sub.id, rubrique.id);
-        div.className = 'volet-item already';
-        div.querySelector('.volet-add-btn')?.remove();
-        const check = document.createElement('span');
-        check.className = 'volet-check'; check.textContent = '✓';
-        div.appendChild(check);
-      });
-    }
-    list.appendChild(div);
-  });
-
-  document.getElementById('volet-2').classList.add('open');
-}
+// Alias de compatibilité
+function openVolet1(famille) { openVoletN(1, famille, famille.id); }
+function openVolet2(rubrique) { openVoletN(2, rubrique); }
 
 // ── Volet 3 : éléments individuels (mode detail = 'oui') ──────
 function openVolet3(rubrique) {
