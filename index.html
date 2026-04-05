@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.1 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.2 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -7905,16 +7905,51 @@ function renderWikiBlock(w) {
 // ── Mode maintenance ──────────────────────────────────────────
 function applyMaintenanceMode() {
   const maintenance = appConfig.maintenance === '0';
-  if (!maintenance) return; // site ouvert → rien à faire
+  if (!maintenance) return;
 
-  // Superuser → toujours accès complet
-  if (currentProfil && currentProfil.statut === 'superuser') return;
-
-  // Maintenance active → masquer le formulaire, afficher le message
+  // Masquer le formulaire, afficher le message
   const form = document.getElementById('splash-form');
   const msg  = document.getElementById('splash-maintenance');
   if (form) form.style.display = 'none';
   if (msg)  msg.style.display  = 'block';
+
+  // Capturer les frappes clavier pour détecter le code secret
+  let buffer = '';
+  const code = (appConfig.maintenance_code || '');
+  if (!code) return;
+
+  const handler = (e) => {
+    // Ignorer les touches de contrôle
+    if (e.key.length > 1) { buffer = ''; return; }
+    buffer += e.key;
+    // Garder seulement les N derniers caractères (longueur du code)
+    if (buffer.length > code.length) buffer = buffer.slice(-code.length);
+    // Vérifier si le code correspond
+    if (buffer === code) {
+      buffer = '';
+      document.removeEventListener('keydown', handler);
+      // Révéler le formulaire
+      if (form) form.style.display = '';
+      if (msg)  msg.style.display  = 'none';
+    }
+  };
+  document.addEventListener('keydown', handler);
+}
+
+// Appelée après connexion réussie si maintenance active et non superuser → bloquer
+function checkMaintenanceAfterLogin() {
+  const maintenance = appConfig.maintenance === '0';
+  if (!maintenance) return true;
+  if (currentProfil?.statut === 'superuser') return true;
+
+  // Non superuser en maintenance → ré-afficher le message
+  const form = document.getElementById('splash-form');
+  const msg  = document.getElementById('splash-maintenance');
+  splashHide();
+  document.getElementById('splash-overlay').classList.remove('hidden');
+  if (form) form.style.display = 'none';
+  if (msg)  msg.style.display  = 'block';
+  return false;
 }
 
 async function logConnexion() {
@@ -7997,6 +8032,9 @@ async function onLoginSuccess(authData) {
   logConnexion().catch(() => {});
 
   updateAuthUI();
+
+  // Vérifier le mode maintenance — bloquer si actif et non superuser
+  if (!checkMaintenanceAfterLogin()) return;
 
   // Vérifier que le compte est actif
   if (currentProfil?.statut === 'en_attente') {
