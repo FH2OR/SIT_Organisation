@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.15 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.16 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -5444,7 +5444,7 @@ function openVolet1FromFamille(famille) {
 
   // Récupérer les événements dont rubrique_id = famille.id
   const evts = (window._evtsByRubrique?.[famille.id] || [])
-    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+    .sort((a, b) => evtStartDays(a) - evtStartDays(b));
 
   if (evts.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
@@ -5503,7 +5503,7 @@ function openVoletByDep(level, parentEvt) {
 
   // Récupérer les événements dont dep = parentEvt.ref
   const evts = (window._evtsByDep?.[parentEvt.ref] || [])
-    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+    .sort((a, b) => evtStartDays(a) - evtStartDays(b));
 
   if (evts.length === 0) {
     list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.6">
