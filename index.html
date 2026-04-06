@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.14 — Beta
+        <span style="font-size:13px">⚙</span> v0.10.15 — Beta
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -6028,7 +6028,7 @@ function createTimeline() { /* création via catalogue uniquement */ }
 // ═══════════════════════════════════════════════════════════════
 //  FC – Detail panel
 // ═══════════════════════════════════════════════════════════════
-let fcEvt = null, fcTl = null, editOpen = false;
+let fcEvt = null, fcTl = null, editOpen = false, _colorOnlyMode = false;
 
 function showFCDetail(evt, tl) {
   fcEvt = evt; fcTl = tl; editOpen = false;
@@ -6125,8 +6125,8 @@ function clearFCDetail() {
 }
 
 function openColorPickerDirect() {
+  _colorOnlyMode = true; // flag : on ne sauvegarde que la couleur
   if (!editOpen) toggleEdit();
-  // Ouvrir le color picker directement
   setTimeout(() => {
     const panel = document.getElementById('color-picker-panel');
     if (!panel.classList.contains('open')) toggleColorPicker();
@@ -6141,6 +6141,7 @@ function toggleEdit() {
   if (!editOpen) {
     // Fermer le sélecteur chromatique
     document.getElementById('color-picker-panel').classList.remove('open');
+    _colorOnlyMode = false;
   }
   if (editOpen && fcEvt) {
     document.getElementById('edit-title').value   = fcEvt.title;
@@ -6210,6 +6211,18 @@ function updateEditPhotoPreview(url) {
 
 function saveEdit() {
   if (!fcEvt) return;
+
+  // ── Mode couleur seule (ouvert via le rond de couleur) ────────
+  if (_colorOnlyMode) {
+    _colorOnlyMode = false;
+    if (fcEvt.id && String(fcEvt.id).startsWith('sb_')) {
+      saveUserColorPreference(String(fcEvt.id).replace('sb_', ''), fcEvt.color);
+    }
+    toggleEdit();
+    showFCDetail(fcEvt, fcTl);
+    render();
+    return;
+  }
 
   const newTitle = document.getElementById('edit-title').value.trim();
   if (newTitle) fcEvt.title = newTitle;
