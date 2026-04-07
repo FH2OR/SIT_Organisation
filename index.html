@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> v0.10.16 — Beta
+        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.16 — Beta</span>
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -2907,7 +2907,11 @@ function xToDay(x) { return state.centerDay + (x - W/2) / state.scale; }
 // ═══════════════════════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = '0.2';
+const APP_VERSION = '0.10.16';
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('btn-version-label');
+  if (el) el.textContent = `v${APP_VERSION} — Beta`;
+});
 
 const HEADER_H  = 62;
 const ROW_H     = 46;   // hauteur de la piste principale (1 seul track)
