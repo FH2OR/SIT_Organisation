@@ -2909,8 +2909,10 @@ function xToDay(x) { return state.centerDay + (x - W/2) / state.scale; }
 // ═══════════════════════════════════════════════════════════════
 const APP_VERSION = '0.10.16';
 document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('btn-version-label');
-  if (el) el.textContent = `v${APP_VERSION} — Beta`;
+  const btn   = document.getElementById('btn-version-label');
+  const about = document.getElementById('about-version');
+  if (btn)   btn.textContent   = `v${APP_VERSION} — Beta`;
+  if (about) about.textContent = `${APP_VERSION} — Version Beta`;
 });
 
 const HEADER_H  = 62;
@@ -9411,7 +9413,7 @@ async function showWelcomeMessage() {
          alt="S.I.T." style="height:70px;width:auto;object-fit:contain">
   </div>
   <div class="about-subtitle">Système d'Information Temporel</div>
-  <div class="about-row"><span>Version</span><span>0.9.50 — Version Beta</span></div>
+  <div class="about-row"><span>Version</span><span id="about-version">0.10.16 — Version Beta</span></div>
   <div class="about-row"><span>Date</span><span>Mars 2026</span></div>
   <div class="about-row"><span>Format</span><span>Application HTML autonome</span></div>
   <div class="about-copy">© 2026 — Tous droits réservés</div>
