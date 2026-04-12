@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.16 — Beta</span>
+        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.17 — Beta</span>
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -2907,7 +2907,7 @@ function xToDay(x) { return state.centerDay + (x - W/2) / state.scale; }
 // ═══════════════════════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = '0.10.16';
+const APP_VERSION = '0.10.17';
 document.addEventListener('DOMContentLoaded', () => {
   const btn   = document.getElementById('btn-version-label');
   const about = document.getElementById('about-version');
@@ -5463,7 +5463,7 @@ function openVolet1FromFamille(famille) {
     // Un item du volet 1 a un ▶ si des événements ont dep = evt.ref
     const hasChildren = evt.ref && (window._evtsByDep?.[evt.ref]?.length > 0);
     const accesVal = (evt.acces || 'public').toLowerCase();
-    const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
+    const locked = (accesVal === 'abonne') && !isAbonne();
 
     const div = document.createElement('div');
     div.className = 'volet-item' + (locked ? ' locked' : '');
@@ -5526,7 +5526,7 @@ function openVoletByDep(level, parentEvt) {
     const hasChildren = evt.ref && (window._evtsByDep?.[evt.ref]?.length > 0);
     const already = loadedRefs.has(evt.ref);
     const accesVal = (evt.acces || 'public').toLowerCase();
-    const locked = (accesVal === 'abonne' || accesVal === 'abonnement') && !isAbonne();
+    const locked = (accesVal === 'abonne') && !isAbonne();
 
     const div = document.createElement('div');
     div.className = 'volet-item' + (already ? ' already' : '') + (locked ? ' locked' : '');
@@ -5750,7 +5750,7 @@ function addFromCatalogue(id, ensureParentId) {
     ? catalogueData.find(c => c.id === cat.parentId) || cat
     : cat;
   const accesVal = rootCat.acces || cat.acces || 'public';
-  const restricted = accesVal === 'abonne' || accesVal === 'abonnement';
+  const restricted = accesVal === 'abonne';
   if (restricted && !isAbonne()) {
     openSubscribePopup();
     return;
