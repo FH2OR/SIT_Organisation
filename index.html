@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.20 — Beta</span>
+        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.21 — Beta</span>
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -2907,7 +2907,7 @@ function xToDay(x) { return state.centerDay + (x - W/2) / state.scale; }
 // ═══════════════════════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = '0.10.20';
+const APP_VERSION = '0.10.21';
 document.addEventListener('DOMContentLoaded', () => {
   const btn   = document.getElementById('btn-version-label');
   const about = document.getElementById('about-version');
@@ -6934,6 +6934,7 @@ async function dbPullCatalogue() {
         zone:       e.zone || null,
         ref:        e.ref  || null,
         dep:        e.dep  || null,
+        acces:      e.acces || 'public',
         importance: e.importance != null ? e.importance : 5,
         rubrique_id: e.rubrique_id,
         wikiTitle:       e.wiki_title || null,
@@ -6953,6 +6954,7 @@ async function dbPullCatalogue() {
         zone:       e.zone || null,
         ref:        e.ref  || null,
         dep:        e.dep  || null,
+        acces:      e.acces || 'public',
         importance: e.importance != null ? e.importance : 5,
         rubrique_id: e.rubrique_id,
         wikiTitle:       e.wiki_title || null,
