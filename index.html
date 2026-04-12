@@ -2168,7 +2168,7 @@
         onclick="toggleAbout(event)"
         onmouseenter="showAppliTooltip(event)"
         onmouseleave="hideAppliTooltip()">
-        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.18 — Beta</span>
+        <span style="font-size:13px">⚙</span> <span id="btn-version-label">v0.10.19 — Beta</span>
       </span>
       <span class="data-badge" id="data-version-badge"
         onclick="toggleDataPopup(event)"
@@ -2907,7 +2907,7 @@ function xToDay(x) { return state.centerDay + (x - W/2) / state.scale; }
 // ═══════════════════════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = '0.10.18';
+const APP_VERSION = '0.10.19';
 document.addEventListener('DOMContentLoaded', () => {
   const btn   = document.getElementById('btn-version-label');
   const about = document.getElementById('about-version');
@@ -6887,13 +6887,8 @@ async function dbPullCatalogue() {
       dbSetStatus('❌ Aucune rubrique dans Supabase.', 'err'); return;
     }
 
-    // 2. Charger les événements selon le rôle
-    // Anonymes et gratuits → uniquement les événements publics
-    // Abonnés et superusers → tous les événements
-    const evtsFilter = isAbonne()
-      ? '?select=*&order=id.asc'
-      : '?select=*&acces=eq.public&order=id.asc';
-    const evts = await sbFetch(sbUrl('evenements', evtsFilter));
+    // 2. Charger tous les événements (le filtrage acces se fait côté affichage)
+    const evts = await sbFetch(sbUrl('evenements', '?select=*&order=id.asc'));
 
     // 3. Reconstruire catalogueData (familles + rubriques pour compatibilité)
     catalogueData = rubs.map(r => ({
